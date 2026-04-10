@@ -42,3 +42,12 @@ export async function joinRoom(req: Request, res: Response, next: NextFunction) 
     next(err);
   }
 }
+
+export async function getRoomInvite(req: Request, res: Response, next: NextFunction) {
+  try {
+    const invite = await roomService.getRoomInvite(req.params.id);
+    res.json({ invite });
+  } catch (err) {
+    next(err);
+  }
+}

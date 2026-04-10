@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler, Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { AppError } from '../utils/errors.js';
-import { isProd } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 export const notFoundHandler = (_req: Request, res: Response) => {
   res.status(404).json({ error: { code: 'not_found', message: 'route not found' } });
@@ -26,10 +26,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next: NextFun
     return;
   }
 
-  if (!isProd) {
-    console.error(err);
-  }
-
+  logger.error({ err }, 'unhandled error');
   res.status(500).json({
     error: { code: 'internal_error', message: 'something went wrong' },
   });

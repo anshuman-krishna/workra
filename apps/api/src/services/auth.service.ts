@@ -19,6 +19,13 @@ async function issueTokens(user: UserDoc): Promise<AuthResult> {
   });
   const { token: refreshToken, jti, expiresAt } = signRefreshToken(String(user._id));
 
+  // append new token, also prune any expired ones to keep the array bounded
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $pull: { refreshTokens: { expiresAt: { $lt: new Date() } } },
+    },
+  );
   await User.updateOne(
     { _id: user._id },
     { $push: { refreshTokens: { jti, expiresAt } } },
@@ -41,6 +48,7 @@ export async function signup(input: SignupInput): Promise<AuthResult> {
   const passwordHash = await hashPassword(input.password);
   const user = await User.create({
     name: input.name,
+    displayName: input.name,
     email: input.email,
     passwordHash,
   });

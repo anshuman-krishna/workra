@@ -4,9 +4,17 @@ export type RoomRole = 'owner' | 'collaborator' | 'client';
 export interface PublicUser {
   id: string;
   name: string;
+  displayName: string;
+  avatarSeed: string;
   email: string;
   role: UserRole;
   createdAt: string;
+}
+
+export interface PublicMember {
+  id: string;
+  displayName: string;
+  avatarSeed: string;
 }
 
 export interface PublicRoom {
@@ -30,4 +38,28 @@ export interface ApiError {
     message: string;
     details?: unknown;
   };
+}
+
+export interface PublicSession {
+  id: string;
+  userId: string;
+  roomId: string;
+  user: PublicMember;
+  startTime: string;
+  endTime: string | null;
+  duration: number | null;
+  intent: string;
+  summary: string | null;
+  linkedTaskId: string | null;
+  createdAt: string;
+}
+
+export interface SessionStat {
+  date: string;
+  totalDuration: number;
+}
+
+export interface RoomInvite {
+  code: string;
+  link: string;
 }

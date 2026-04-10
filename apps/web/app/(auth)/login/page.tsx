@@ -1,7 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginInput } from '@workra/shared';
@@ -22,9 +23,17 @@ import { authApi } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/auth/store';
 
-export default function LoginPage() {
+function safeNext(value: string | null): string {
+  if (!value) return '/dashboard';
+  if (!value.startsWith('/') || value.startsWith('//')) return '/dashboard';
+  return value;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
+  const next = safeNext(searchParams.get('next'));
 
   const {
     register,
@@ -39,7 +48,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(values);
       setSession(res.user, res.accessToken);
-      router.replace('/dashboard');
+      router.replace(next);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'could not log in';
       toast.error(message);
@@ -80,11 +89,22 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           no account?{' '}
-          <Link href="/signup" className="font-medium text-foreground underline-offset-4 hover:underline">
+          <Link
+            href={next === '/dashboard' ? '/signup' : `/signup?next=${encodeURIComponent(next)}`}
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
             create one
           </Link>
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -4,6 +4,8 @@ import { Membership } from '../models/membership.model.js';
 import { generateInviteCode } from '../utils/invite-code.js';
 import { conflict, forbidden, notFound } from '../utils/errors.js';
 import { toPublicRoom } from '../utils/serialize.js';
+import { env } from '../config/env.js';
+import * as activityLog from './activity-log.service.js';
 import type { RoomRole, PublicRoom } from '@workra/shared';
 
 async function createUniqueInviteCode(): Promise<string> {
@@ -27,6 +29,13 @@ export async function createRoom(userId: string, name: string): Promise<PublicRo
     userId: new mongoose.Types.ObjectId(userId),
     roomId: room._id,
     role: 'owner',
+  });
+
+  void activityLog.record({
+    userId,
+    roomId: String(room._id),
+    type: 'room_created',
+    metadata: { name },
   });
 
   return toPublicRoom(room, 'owner', 1);
@@ -84,6 +93,23 @@ export async function joinRoom(userId: string, code: string): Promise<PublicRoom
     role: 'collaborator',
   });
 
+  void activityLog.record({
+    userId,
+    roomId: String(room._id),
+    type: 'room_joined',
+    metadata: {},
+  });
+
   const memberCount = await Membership.countDocuments({ roomId: room._id });
   return toPublicRoom(room, 'collaborator', memberCount);
+}
+
+export async function getRoomInvite(roomId: string): Promise<{ code: string; link: string }> {
+  if (!mongoose.isValidObjectId(roomId)) throw notFound('room not found');
+  const room = await Room.findById(roomId);
+  if (!room) throw notFound('room not found');
+  return {
+    code: room.inviteCode,
+    link: `${env.WEB_ORIGIN}/join/${room.inviteCode}`,
+  };
 }

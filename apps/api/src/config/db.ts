@@ -1,19 +1,20 @@
 import mongoose from 'mongoose';
 import { env } from './env.js';
+import { logger } from '../utils/logger.js';
 
 mongoose.set('strictQuery', true);
 
 export async function connectDatabase(): Promise<void> {
   try {
     await mongoose.connect(env.MONGODB_URI);
-    console.log('mongo connected');
+    logger.info('mongo connected');
   } catch (err) {
-    console.error('mongo connection failed', err);
+    logger.fatal({ err }, 'mongo connection failed');
     process.exit(1);
   }
 
   mongoose.connection.on('disconnected', () => {
-    console.warn('mongo disconnected');
+    logger.warn('mongo disconnected');
   });
 }
 

@@ -1,4 +1,4 @@
-import type { PublicRoom, CreateRoomInput, JoinRoomInput } from '@workra/shared';
+import type { PublicRoom, CreateRoomInput, JoinRoomInput, RoomInvite } from '@workra/shared';
 import { apiFetch } from './client';
 
 export const roomsApi = {
@@ -11,4 +11,6 @@ export const roomsApi = {
     apiFetch<{ room: PublicRoom }>('/rooms/join', { method: 'POST', body: input }),
 
   get: (id: string) => apiFetch<{ room: PublicRoom }>(`/rooms/${id}`),
+
+  getInvite: (id: string) => apiFetch<{ invite: RoomInvite }>(`/rooms/${id}/invite`),
 };

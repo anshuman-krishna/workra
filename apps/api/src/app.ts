@@ -2,11 +2,12 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
+import pinoHttp from 'pino-http';
 import mongoSanitize from 'express-mongo-sanitize';
 
-import { env, isProd } from './config/env.js';
+import { env } from './config/env.js';
 import routes from './routes/index.js';
+import { logger } from './utils/logger.js';
 import { globalLimiter } from './middlewares/rate-limit.middleware.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 
@@ -15,6 +16,21 @@ export function createApp(): Express {
 
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
+
+  app.use(
+    pinoHttp({
+      logger,
+      customLogLevel: (_req, res, err) => {
+        if (err || res.statusCode >= 500) return 'error';
+        if (res.statusCode >= 400) return 'warn';
+        return 'debug';
+      },
+      serializers: {
+        req: (req) => ({ method: req.method, url: req.url }),
+        res: (res) => ({ statusCode: res.statusCode }),
+      },
+    }),
+  );
 
   app.use(helmet());
   app.use(
@@ -27,7 +43,6 @@ export function createApp(): Express {
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
   app.use(mongoSanitize());
-  if (!isProd) app.use(morgan('dev'));
   app.use(globalLimiter);
 
   app.use('/', routes);

@@ -12,3 +12,26 @@ export const validateBody =
     req.body = result.data;
     next();
   };
+
+export const validateQuery =
+  <T>(schema: ZodSchema<T>): RequestHandler =>
+  (req: Request, _res: Response, next: NextFunction) => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      next(result.error);
+      return;
+    }
+    // express 4 query is read-only via replace; mutate via assign instead
+    Object.assign(req.query, result.data as Record<string, unknown>);
+    (req as Request & { validatedQuery?: unknown }).validatedQuery = result.data;
+    next();
+  };
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      validatedQuery?: unknown;
+    }
+  }
+}

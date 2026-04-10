@@ -11,6 +11,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL: z.string().default('7d'),
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
   COOKIE_DOMAIN: z.string().optional(),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -1,4 +1,6 @@
 import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import { baseSchemaOptions, baseTransform } from '../utils/schema-transform.js';
+import { generateAvatarSeed } from '../utils/avatar.js';
 
 const refreshTokenSchema = new Schema(
   {
@@ -11,6 +13,8 @@ const refreshTokenSchema = new Schema(
 const userSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, minlength: 1, maxlength: 80 },
+    displayName: { type: String, required: true, trim: true, minlength: 1, maxlength: 80 },
+    avatarSeed: { type: String, required: true, default: generateAvatarSeed },
     email: {
       type: String,
       required: true,
@@ -23,8 +27,25 @@ const userSchema = new Schema(
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
     refreshTokens: { type: [refreshTokenSchema], default: [], select: false },
   },
-  { timestamps: true },
+  {
+    ...baseSchemaOptions,
+    toJSON: {
+      virtuals: false,
+      versionKey: false,
+      transform: (doc, ret) => {
+        baseTransform(doc, ret);
+        delete ret.passwordHash;
+        delete ret.refreshTokens;
+        return ret;
+      },
+    },
+  },
 );
+
+userSchema.pre('validate', function (next) {
+  if (!this.displayName && this.name) this.displayName = this.name;
+  next();
+});
 
 export type UserDoc = InferSchemaType<typeof userSchema> & { _id: Schema.Types.ObjectId };
 

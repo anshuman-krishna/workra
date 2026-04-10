@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import { baseSchemaOptions } from '../utils/schema-transform.js';
 
 const membershipSchema = new Schema(
   {
@@ -12,7 +13,7 @@ const membershipSchema = new Schema(
     },
     joinedAt: { type: Date, default: () => new Date() },
   },
-  { timestamps: true },
+  baseSchemaOptions,
 );
 
 membershipSchema.index({ userId: 1, roomId: 1 }, { unique: true });

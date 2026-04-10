@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import { baseSchemaOptions } from '../utils/schema-transform.js';
 
 const roomSchema = new Schema(
   {
@@ -6,7 +7,7 @@ const roomSchema = new Schema(
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     inviteCode: { type: String, required: true, unique: true, index: true, uppercase: true },
   },
-  { timestamps: true },
+  baseSchemaOptions,
 );
 
 export type RoomDoc = InferSchemaType<typeof roomSchema> & { _id: Schema.Types.ObjectId };
