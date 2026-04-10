@@ -1,8 +1,7 @@
-# workra
-
+## workra
 clarity in every working hour.
 
-phase 1 — foundation: monorepo, auth, rooms, base layout.
+till now: foundation: monorepo, auth, rooms, base layout.
 
 ## structure
 
@@ -52,21 +51,16 @@ npm run dev:web
 
 then open http://localhost:3000.
 
-## what works in phase 1
-
+## what works right now
 - signup / login / logout / refresh (jwt access + httpOnly refresh cookie, rotated on every refresh)
 - `/users/me`
 - create room, list my rooms, join by 6-char invite code, view room
 - sidebar + topbar layout with dashboard, rooms, calendar, reports
 - room tabs (overview live, others are placeholder empty states)
 
-## what is deliberately out of scope for phase 1
-
-time tracking, sessions, files, tasks, chat, calendar, reports, websockets, admin, email verification, s3. placeholders exist so the layout is honest.
 
 ## production builds
-
-phase 1 uses `tsx` as the api runtime in both dev and "start" so the shared workspace can ship raw `.ts`. a bundled api build (tsup/esbuild) will land with the deployment phase alongside the vercel/railway setup.
+this uses `tsx` as the api runtime in both dev and "start" so the shared workspace can ship raw `.ts`. a bundled api build (tsup/esbuild) will land with the deployment phase alongside the vercel/railway setup.
 
 ## commands
 

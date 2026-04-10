@@ -13,3 +13,6 @@ coverage
 npm-debug.log*
 .turbo
 .cache
+
+#testing and validation
+CLAUDE.md
