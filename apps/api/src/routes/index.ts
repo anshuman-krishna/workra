@@ -4,6 +4,7 @@ import roomRoutes from './room.routes.js';
 import userRoutes from './user.routes.js';
 import sessionRoutes from './session.routes.js';
 import taskRoutes from './task.routes.js';
+import fileRoutes from './file.routes.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/rooms', roomRoutes);
 router.use('/users', userRoutes);
 router.use('/sessions', sessionRoutes);
 router.use('/tasks', taskRoutes);
+router.use('/files', fileRoutes);
 
 export default router;

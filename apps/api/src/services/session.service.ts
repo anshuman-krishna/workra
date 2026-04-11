@@ -133,9 +133,9 @@ export async function startSession(
     userId,
     roomId,
     type: 'session_started',
+    entityId: String(session._id),
     metadata: {
       intent: input.intent,
-      sessionId: String(session._id),
       linkedTaskId: linkedTaskRef?.id ?? null,
     },
   });
@@ -165,8 +165,8 @@ export async function stopSession(
     userId,
     roomId: String(active.roomId),
     type: 'session_completed',
+    entityId: String(active._id),
     metadata: {
-      sessionId: String(active._id),
       intent: active.intent,
       duration,
       linkedTaskId: active.linkedTaskId ? String(active.linkedTaskId) : null,

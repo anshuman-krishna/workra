@@ -53,18 +53,24 @@ async function performRefresh(): Promise<string | null> {
 export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { body, auth = true, skipRefresh = false, headers, ...rest } = opts;
 
+  // FormData is sent as multipart; let the browser set Content-Type with the boundary.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const buildHeaders = (token: string | null): HeadersInit => {
     const h = new Headers(headers);
-    if (body !== undefined) h.set('Content-Type', 'application/json');
+    if (body !== undefined && !isFormData) h.set('Content-Type', 'application/json');
     if (auth && token) h.set('Authorization', `Bearer ${token}`);
     return h;
   };
+
+  const requestBody: BodyInit | undefined =
+    body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body);
 
   const doFetch = async (token: string | null) =>
     fetch(`${API_URL}${path}`, {
       ...rest,
       headers: buildHeaders(token),
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: requestBody,
       credentials: 'include',
     });
 

@@ -10,9 +10,25 @@ import type {
   ListTasksQuery,
   PublicTask,
   PublicSession,
+  TaskStatus,
   UpdateTaskInput,
 } from '@workra/shared';
 import { toPublicSession } from './session.service.js';
+
+// allowed task state transitions. todo→in_progress→done with reopen via done→in_progress.
+// any other change (todo↔done, in_progress→todo, done→todo) is rejected.
+const ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  todo: ['in_progress'],
+  in_progress: ['done'],
+  done: ['in_progress'],
+};
+
+function assertValidTransition(from: TaskStatus, to: TaskStatus) {
+  if (from === to) return;
+  if (!ALLOWED_TRANSITIONS[from].includes(to)) {
+    throw badRequest(`cannot move task from ${from} to ${to}`);
+  }
+}
 
 interface PopulatedUser {
   _id: mongoose.Types.ObjectId;
@@ -88,7 +104,8 @@ export async function createTask(
     userId,
     roomId,
     type: 'task_created',
-    metadata: { taskId: String(task._id), title: task.title },
+    entityId: String(task._id),
+    metadata: { title: task.title },
   });
 
   const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
@@ -158,6 +175,10 @@ export async function updateTask(
 
   const wasComplete = task.status === 'done';
 
+  if (input.status !== undefined) {
+    assertValidTransition(task.status, input.status);
+  }
+
   if (input.title !== undefined) task.title = input.title;
   if (input.description !== undefined) task.description = input.description;
   if (input.status !== undefined) task.status = input.status;
@@ -187,7 +208,8 @@ export async function updateTask(
     userId,
     roomId,
     type: becameComplete ? 'task_completed' : 'task_updated',
-    metadata: { taskId: String(task._id), title: task.title, status: task.status },
+    entityId: String(task._id),
+    metadata: { title: task.title, status: task.status },
   });
 
   const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
@@ -207,7 +229,8 @@ export async function deleteTask(userId: string, taskId: string): Promise<void> 
     userId,
     roomId,
     type: 'task_deleted',
-    metadata: { taskId: String(task._id), title: task.title },
+    entityId: String(task._id),
+    metadata: { title: task.title },
   });
 }
 

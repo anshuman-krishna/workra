@@ -42,6 +42,7 @@ export async function createRoom(userId: string, name: string): Promise<PublicRo
     userId,
     roomId: String(room._id),
     type: 'room_created',
+    entityId: String(room._id),
     metadata: { name },
   });
 
@@ -104,6 +105,7 @@ export async function joinRoom(userId: string, code: string): Promise<PublicRoom
     userId,
     roomId: String(room._id),
     type: 'room_joined',
+    entityId: String(room._id),
     metadata: {},
   });
 

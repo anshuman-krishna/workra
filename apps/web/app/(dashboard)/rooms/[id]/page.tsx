@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { roomsApi } from '@/lib/api/rooms';
+import { ActivityTimeline } from '@/components/room/activity-timeline';
 
 export default function RoomOverviewPage() {
   const params = useParams<{ id: string }>();
@@ -42,6 +43,7 @@ export default function RoomOverviewPage() {
   };
 
   return (
+    <div className="space-y-4">
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
@@ -106,6 +108,9 @@ export default function RoomOverviewPage() {
           </div>
         </CardContent>
       </Card>
+    </div>
+
+      <ActivityTimeline roomId={params.id} />
     </div>
   );
 }

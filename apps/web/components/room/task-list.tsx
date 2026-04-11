@@ -36,10 +36,11 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+// click cycle: todo → in_progress → done → in_progress (reopen). never cycles back to todo.
 function nextStatus(status: TaskStatus): TaskStatus {
   if (status === 'todo') return 'in_progress';
   if (status === 'in_progress') return 'done';
-  return 'todo';
+  return 'in_progress';
 }
 
 function StatusIcon({ status }: { status: TaskStatus }) {

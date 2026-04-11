@@ -49,9 +49,15 @@ export function StopSessionDialog({ open, onOpenChange, session, elapsedMs }: Pr
         values.summary && values.summary.trim().length > 0 ? { summary: values.summary } : {};
       await sessionsApi.stop(payload);
       setActive(null);
-      await qc.invalidateQueries({ queryKey: ['session', 'active'] });
-      await qc.invalidateQueries({ queryKey: ['sessions', session.roomId] });
-      await qc.invalidateQueries({ queryKey: ['session-stats', session.roomId] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['session', 'active'] }),
+        qc.invalidateQueries({ queryKey: ['sessions', session.roomId] }),
+        qc.invalidateQueries({ queryKey: ['session-stats', session.roomId] }),
+        qc.invalidateQueries({ queryKey: ['activity', session.roomId] }),
+      ]);
+      if (session.linkedTaskId) {
+        await qc.invalidateQueries({ queryKey: ['task', session.linkedTaskId, 'sessions'] });
+      }
       reset();
       onOpenChange(false);
       toast.success('session saved');

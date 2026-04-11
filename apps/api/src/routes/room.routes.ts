@@ -3,14 +3,18 @@ import {
   createRoomSchema,
   createTaskSchema,
   joinRoomSchema,
+  listActivityQuerySchema,
   listSessionsQuerySchema,
   listTasksQuerySchema,
 } from '@workra/shared';
 import * as roomController from '../controllers/room.controller.js';
 import * as sessionController from '../controllers/session.controller.js';
 import * as taskController from '../controllers/task.controller.js';
+import * as fileController from '../controllers/file.controller.js';
+import * as activityController from '../controllers/activity.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
+import { uploadMiddleware } from './file.routes.js';
 
 const router = Router();
 
@@ -53,6 +57,26 @@ router.post(
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(createTaskSchema),
   taskController.create,
+);
+
+router.get(
+  '/:id/files',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  fileController.list,
+);
+
+router.post(
+  '/:id/files',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  uploadMiddleware,
+  fileController.upload,
+);
+
+router.get(
+  '/:id/activity',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateQuery(listActivityQuerySchema),
+  activityController.listRoomActivity,
 );
 
 export default router;

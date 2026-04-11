@@ -85,3 +85,48 @@ export interface RoomInvite {
   code: string;
   link: string;
 }
+
+export interface PublicFile {
+  id: string;
+  roomId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  version: number;
+  rootFileId: string;
+  isLatest: boolean;
+  uploadedBy: PublicMember;
+  createdAt: string;
+}
+
+export interface FileWithUrl extends PublicFile {
+  downloadUrl: string;
+  expiresAt: string;
+}
+
+export type ActivityCategory = 'session' | 'task' | 'file' | 'room';
+
+export type ActivityType =
+  | 'session_started'
+  | 'session_completed'
+  | 'room_created'
+  | 'room_joined'
+  | 'task_created'
+  | 'task_updated'
+  | 'task_completed'
+  | 'task_deleted'
+  | 'file_uploaded'
+  | 'file_versioned'
+  | 'file_deleted';
+
+export interface PublicActivity {
+  id: string;
+  type: ActivityType;
+  category: ActivityCategory;
+  title: string;
+  subtitle: string | null;
+  user: PublicMember;
+  entityId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}

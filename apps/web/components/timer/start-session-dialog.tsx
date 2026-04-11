@@ -86,7 +86,13 @@ export function StartSessionDialog({ open, onOpenChange, defaultRoomId }: Props)
       };
       const { session } = await sessionsApi.start(payload);
       setActive(session);
-      await qc.invalidateQueries({ queryKey: ['session', 'active'] });
+      // backend is the source of truth; refresh anything that mirrors session state
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['session', 'active'] }),
+        qc.invalidateQueries({ queryKey: ['sessions', session.roomId] }),
+        qc.invalidateQueries({ queryKey: ['session-stats', session.roomId] }),
+        qc.invalidateQueries({ queryKey: ['activity', session.roomId] }),
+      ]);
       if (session.linkedTaskId) {
         await qc.invalidateQueries({ queryKey: ['task', session.linkedTaskId, 'sessions'] });
       }

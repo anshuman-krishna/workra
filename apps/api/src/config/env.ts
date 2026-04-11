@@ -12,6 +12,31 @@ const envSchema = z.object({
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
   COOKIE_DOMAIN: z.string().optional(),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  // storage: s3-compatible (aws s3, cloudflare r2, minio).
+  // STORAGE_DRIVER=local stores blobs on disk under STORAGE_LOCAL_DIR; useful for dev without cloud creds.
+  STORAGE_DRIVER: z.enum(['s3', 'local']).default('local'),
+  STORAGE_BUCKET: z.string().optional(),
+  STORAGE_REGION: z.string().default('auto'),
+  STORAGE_ENDPOINT: z.string().url().optional(),
+  STORAGE_ACCESS_KEY: z.string().optional(),
+  STORAGE_SECRET_KEY: z.string().optional(),
+  STORAGE_PUBLIC_URL: z.string().url().optional(),
+  STORAGE_LOCAL_DIR: z.string().default('./uploads'),
+  STORAGE_SIGNED_URL_TTL: z.coerce.number().int().positive().default(900),
+  STORAGE_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
+}).superRefine((data, ctx) => {
+  if (data.STORAGE_DRIVER === 's3') {
+    const required = ['STORAGE_BUCKET', 'STORAGE_ACCESS_KEY', 'STORAGE_SECRET_KEY'] as const;
+    for (const key of required) {
+      if (!data[key]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${key} is required when STORAGE_DRIVER=s3`,
+        });
+      }
+    }
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);
