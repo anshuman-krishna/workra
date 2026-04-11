@@ -1,10 +1,16 @@
 import { Router } from 'express';
-import { createRoomSchema, joinRoomSchema } from '@workra/shared';
+import {
+  createRoomSchema,
+  createTaskSchema,
+  joinRoomSchema,
+  listSessionsQuerySchema,
+  listTasksQuerySchema,
+} from '@workra/shared';
 import * as roomController from '../controllers/room.controller.js';
 import * as sessionController from '../controllers/session.controller.js';
+import * as taskController from '../controllers/task.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
-import { listSessionsQuerySchema } from '@workra/shared';
 
 const router = Router();
 
@@ -16,6 +22,11 @@ router.post('/join', validateBody(joinRoomSchema), roomController.joinRoom);
 
 router.get('/:id', roomController.getRoom);
 router.get('/:id/invite', requireRoomRole(['owner']), roomController.getRoomInvite);
+router.get(
+  '/:id/members',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  roomController.listRoomMembers,
+);
 
 router.get(
   '/:id/sessions',
@@ -28,6 +39,20 @@ router.get(
   '/:id/session-stats',
   requireRoomRole(['owner', 'collaborator', 'client']),
   sessionController.getRoomSessionStats,
+);
+
+router.get(
+  '/:id/tasks',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateQuery(listTasksQuerySchema),
+  taskController.list,
+);
+
+router.post(
+  '/:id/tasks',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateBody(createTaskSchema),
+  taskController.create,
 );
 
 export default router;

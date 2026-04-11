@@ -40,6 +40,12 @@ export interface ApiError {
   };
 }
 
+export interface TaskRef {
+  id: string;
+  title: string;
+  status: 'todo' | 'in_progress' | 'done';
+}
+
 export interface PublicSession {
   id: string;
   userId: string;
@@ -51,7 +57,23 @@ export interface PublicSession {
   intent: string;
   summary: string | null;
   linkedTaskId: string | null;
+  linkedTask: TaskRef | null;
   createdAt: string;
+}
+
+export interface PublicTask {
+  id: string;
+  roomId: string;
+  title: string;
+  description: string | null;
+  status: 'todo' | 'in_progress' | 'done';
+  assignedTo: string | null;
+  assignee: PublicMember | null;
+  dueDate: string | null;
+  completedAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SessionStat {

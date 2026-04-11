@@ -10,11 +10,10 @@ function userId(req: Request): string {
 
 export async function start(req: Request, res: Response, next: NextFunction) {
   try {
-    const session = await sessionService.startSession(
-      userId(req),
-      req.body.roomId,
-      req.body.intent,
-    );
+    const session = await sessionService.startSession(userId(req), req.body.roomId, {
+      intent: req.body.intent,
+      linkedTaskId: req.body.linkedTaskId ?? null,
+    });
     res.status(201).json({ session });
   } catch (err) {
     next(err);

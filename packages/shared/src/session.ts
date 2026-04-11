@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const startSessionSchema = z.object({
   roomId: z.string().min(1, 'roomId is required'),
   intent: z.string().trim().min(1, 'intent is required').max(200, 'intent too long'),
+  linkedTaskId: z.string().min(1).nullable().optional(),
 });
 
 export const stopSessionSchema = z.object({

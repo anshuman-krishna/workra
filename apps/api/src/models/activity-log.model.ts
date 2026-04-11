@@ -5,7 +5,11 @@ export type ActivityType =
   | 'session_started'
   | 'session_completed'
   | 'room_created'
-  | 'room_joined';
+  | 'room_joined'
+  | 'task_created'
+  | 'task_updated'
+  | 'task_completed'
+  | 'task_deleted';
 
 const activityLogSchema = new Schema(
   {

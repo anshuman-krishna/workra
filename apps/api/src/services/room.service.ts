@@ -1,12 +1,19 @@
 import mongoose from 'mongoose';
 import { Room } from '../models/room.model.js';
 import { Membership } from '../models/membership.model.js';
+import { User } from '../models/user.model.js';
 import { generateInviteCode } from '../utils/invite-code.js';
 import { conflict, forbidden, notFound } from '../utils/errors.js';
 import { toPublicRoom } from '../utils/serialize.js';
 import { env } from '../config/env.js';
 import * as activityLog from './activity-log.service.js';
-import type { RoomRole, PublicRoom } from '@workra/shared';
+import type { RoomRole, PublicRoom, PublicMember } from '@workra/shared';
+
+interface MemberRow {
+  _id: mongoose.Types.ObjectId;
+  displayName: string;
+  avatarSeed: string;
+}
 
 async function createUniqueInviteCode(): Promise<string> {
   for (let i = 0; i < 5; i++) {
@@ -102,6 +109,27 @@ export async function joinRoom(userId: string, code: string): Promise<PublicRoom
 
   const memberCount = await Membership.countDocuments({ roomId: room._id });
   return toPublicRoom(room, 'collaborator', memberCount);
+}
+
+export async function listRoomMembers(userId: string, roomId: string): Promise<PublicMember[]> {
+  if (!mongoose.isValidObjectId(roomId)) throw notFound('room not found');
+  const membership = await Membership.findOne({ userId, roomId });
+  if (!membership) throw forbidden('you are not a member of this room');
+
+  const memberships = await Membership.find({ roomId }).lean();
+  if (memberships.length === 0) return [];
+
+  const userIds = memberships.map((m) => m.userId);
+  const users = await User.find({ _id: { $in: userIds } })
+    .select('displayName avatarSeed')
+    .lean();
+  const rows = users as unknown as MemberRow[];
+
+  return rows.map((u) => ({
+    id: String(u._id),
+    displayName: u.displayName,
+    avatarSeed: u.avatarSeed,
+  }));
 }
 
 export async function getRoomInvite(roomId: string): Promise<{ code: string; link: string }> {

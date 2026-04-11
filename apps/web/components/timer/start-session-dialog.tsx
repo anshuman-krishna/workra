@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { sessionsApi } from '@/lib/api/sessions';
 import { roomsApi } from '@/lib/api/rooms';
+import { tasksApi } from '@/lib/api/tasks';
 import { ApiError } from '@/lib/api/client';
 import { useTimerStore } from '@/lib/timer/store';
 
@@ -50,10 +51,18 @@ export function StartSessionDialog({ open, onOpenChange, defaultRoomId }: Props)
     formState: { errors, isSubmitting },
   } = useForm<StartSessionInput>({
     resolver: zodResolver(startSessionSchema),
-    defaultValues: { roomId: defaultRoomId ?? '', intent: '' },
+    defaultValues: { roomId: defaultRoomId ?? '', intent: '', linkedTaskId: null },
   });
 
   const roomId = watch('roomId');
+
+  const { data: tasksData } = useQuery({
+    queryKey: ['tasks', roomId, 'open'],
+    queryFn: () => tasksApi.listForRoom(roomId),
+    enabled: open && Boolean(roomId),
+  });
+  // only show open tasks; finished work shouldn't get more sessions linked
+  const openTasks = (tasksData?.tasks ?? []).filter((t) => t.status !== 'done');
 
   useEffect(() => {
     if (!open) return;
@@ -64,12 +73,24 @@ export function StartSessionDialog({ open, onOpenChange, defaultRoomId }: Props)
     }
   }, [open, defaultRoomId, rooms, roomId, setValue]);
 
+  // clear stale task selection when room changes; tasks belong to a single room
+  useEffect(() => {
+    setValue('linkedTaskId', null);
+  }, [roomId, setValue]);
+
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const { session } = await sessionsApi.start(values);
+      const payload = {
+        ...values,
+        linkedTaskId: values.linkedTaskId ? values.linkedTaskId : null,
+      };
+      const { session } = await sessionsApi.start(payload);
       setActive(session);
       await qc.invalidateQueries({ queryKey: ['session', 'active'] });
-      reset({ roomId: '', intent: '' });
+      if (session.linkedTaskId) {
+        await qc.invalidateQueries({ queryKey: ['task', session.linkedTaskId, 'sessions'] });
+      }
+      reset({ roomId: '', intent: '', linkedTaskId: null });
       onOpenChange(false);
       toast.success('session started');
     } catch (err) {
@@ -120,6 +141,23 @@ export function StartSessionDialog({ open, onOpenChange, defaultRoomId }: Props)
               {...register('intent')}
             />
             {errors.intent && <p className="text-xs text-destructive">{errors.intent.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="session-task">linked task (optional)</Label>
+            <select
+              id="session-task"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              {...register('linkedTaskId', { setValueAs: (v) => (v ? v : null) })}
+              disabled={openTasks.length === 0}
+            >
+              <option value="">none</option>
+              {openTasks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </select>
           </div>
 
           <DialogFooter>

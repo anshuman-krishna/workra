@@ -51,3 +51,12 @@ export async function getRoomInvite(req: Request, res: Response, next: NextFunct
     next(err);
   }
 }
+
+export async function listRoomMembers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const members = await roomService.listRoomMembers(userId(req), req.params.id);
+    res.json({ members });
+  } catch (err) {
+    next(err);
+  }
+}

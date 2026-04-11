@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { ListChecks } from 'lucide-react';
 import type { PublicSession } from '@workra/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -98,8 +99,14 @@ export function SessionList({ sessions }: { sessions: PublicSession[] }) {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {session.user.displayName} · {formatTimeOfDay(session.startTime)}
-                        {session.endTime && ` – ${formatTimeOfDay(session.endTime)}`}
+                        {session.endTime && ` to ${formatTimeOfDay(session.endTime)}`}
                       </p>
+                      {session.linkedTask && (
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <ListChecks className="h-3 w-3" />
+                          <span className="truncate">{session.linkedTask.title}</span>
+                        </p>
+                      )}
                       {session.summary && (
                         <p className="whitespace-pre-wrap pt-1 text-sm text-muted-foreground">
                           {session.summary}
