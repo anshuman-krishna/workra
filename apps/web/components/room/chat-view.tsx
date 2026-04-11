@@ -70,17 +70,18 @@ export function ChatView({ roomId }: Props) {
     refetchOnWindowFocus: true,
   });
 
-  // flatten pages into a single list in chronological (oldest → newest) order.
-  // pages come newest-first, so reverse within each page and reverse across pages.
+  // flatten pages and sort strictly by createdAt. server createdAt is the source of
+  // truth for ordering, so optimistic messages (with a client-side timestamp) reconcile
+  // cleanly once the server echo lands and the temp id is swapped out.
   const messages = useMemo<PublicMessage[]>(() => {
     if (!query.data) return [];
     const all: PublicMessage[] = [];
-    for (let i = query.data.pages.length - 1; i >= 0; i--) {
-      const page = query.data.pages[i];
-      for (let j = page.messages.length - 1; j >= 0; j--) {
-        all.push(page.messages[j]);
-      }
+    for (const page of query.data.pages) {
+      for (const m of page.messages) all.push(m);
     }
+    all.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
     return all;
   }, [query.data]);
 

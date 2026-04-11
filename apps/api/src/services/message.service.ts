@@ -3,7 +3,7 @@ import { Message, type MessageDoc } from '../models/message.model.js';
 import { Membership } from '../models/membership.model.js';
 import { User } from '../models/user.model.js';
 import { FileModel } from '../models/file.model.js';
-import { badRequest, forbidden, notFound } from '../utils/errors.js';
+import { badRequest, forbidden, notFound, tooManyRequests } from '../utils/errors.js';
 import * as activityLog from './activity-log.service.js';
 import * as realtime from '../realtime/emit.js';
 import type {
@@ -26,6 +26,43 @@ interface FileRow {
   mimeType: string;
   size: number;
   roomId: mongoose.Types.ObjectId;
+}
+
+// in-memory sliding window rate limiter for message sends.
+// 20 messages per minute per (user, room). intentionally not redis-backed:
+// a single process is fine for the current deployment, and we'd rather let a
+// short burst through on a restart than pay the ops cost of a shared store.
+// if we ever run multiple api instances, this needs to move to redis.
+const MESSAGE_RATE_WINDOW_MS = 60_000;
+const MESSAGE_RATE_MAX = 20;
+const messageRateBuckets = new Map<string, number[]>();
+
+function checkMessageRate(userId: string, roomId: string): void {
+  const key = `${userId}:${roomId}`;
+  const now = Date.now();
+  const windowStart = now - MESSAGE_RATE_WINDOW_MS;
+  const existing = messageRateBuckets.get(key) ?? [];
+  // drop anything outside the window
+  const recent = existing.filter((ts) => ts > windowStart);
+  if (recent.length >= MESSAGE_RATE_MAX) {
+    const oldest = recent[0];
+    const retryAfter = Math.max(1, Math.ceil((oldest + MESSAGE_RATE_WINDOW_MS - now) / 1000));
+    throw tooManyRequests(
+      `you're sending messages too fast. take a breath and try again in ${retryAfter}s.`,
+      { retryAfter },
+    );
+  }
+  recent.push(now);
+  messageRateBuckets.set(key, recent);
+
+  // opportunistic cleanup so the map doesn't grow unbounded on a long-running process
+  if (messageRateBuckets.size > 1000) {
+    for (const [k, v] of messageRateBuckets) {
+      const kept = v.filter((ts) => ts > windowStart);
+      if (kept.length === 0) messageRateBuckets.delete(k);
+      else messageRateBuckets.set(k, kept);
+    }
+  }
 }
 
 function toPublicMessage(
@@ -121,6 +158,7 @@ export async function sendMessage(
   input: CreateMessageInput,
 ): Promise<PublicMessage> {
   await assertMember(userId, roomId);
+  checkMessageRate(userId, roomId);
 
   const attachments = await resolveAttachments(roomId, input.attachmentFileIds ?? []);
 

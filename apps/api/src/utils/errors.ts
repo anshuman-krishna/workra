@@ -22,3 +22,6 @@ export const forbidden = (message = 'forbidden') => new AppError(403, 'forbidden
 export const notFound = (message = 'not found') => new AppError(404, 'not_found', message);
 
 export const conflict = (message: string) => new AppError(409, 'conflict', message);
+
+export const tooManyRequests = (message: string, details?: unknown) =>
+  new AppError(429, 'too_many_requests', message, details);

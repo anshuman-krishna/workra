@@ -3,12 +3,13 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  CalendarPlus,
+  CalendarX,
   CheckCircle2,
   Circle,
   File as FileIcon,
   ListChecks,
   LogIn,
-  MessageSquare,
   Pencil,
   Sparkles,
   Timer,
@@ -27,7 +28,9 @@ interface Props {
   roomId: string;
 }
 
-const ICONS: Record<ActivityType, LucideIcon> = {
+// chat is intentionally omitted — the timeline surfaces work events only.
+// message_sent is still written to the audit log, just not shown here.
+const ICONS: Partial<Record<ActivityType, LucideIcon>> = {
   session_started: Timer,
   session_completed: CheckCircle2,
   room_created: Sparkles,
@@ -39,7 +42,8 @@ const ICONS: Record<ActivityType, LucideIcon> = {
   file_uploaded: Upload,
   file_versioned: FileIcon,
   file_deleted: Trash2,
-  message_sent: MessageSquare,
+  event_created: CalendarPlus,
+  event_deleted: CalendarX,
 };
 
 const FILTERS: Array<{ value: ActivityCategory | 'all'; label: string }> = [
@@ -47,7 +51,7 @@ const FILTERS: Array<{ value: ActivityCategory | 'all'; label: string }> = [
   { value: 'session', label: 'sessions' },
   { value: 'task', label: 'tasks' },
   { value: 'file', label: 'files' },
-  { value: 'chat', label: 'chat' },
+  { value: 'event', label: 'events' },
   { value: 'room', label: 'room' },
 ];
 

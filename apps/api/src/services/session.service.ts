@@ -244,26 +244,50 @@ export async function listRoomSessions(
   });
 }
 
-export async function getRoomSessionStats(roomId: string): Promise<SessionStat[]> {
+interface StatsRange {
+  from?: Date;
+  to?: Date;
+}
+
+export async function getRoomSessionStats(
+  roomId: string,
+  range: StatsRange = {},
+): Promise<SessionStat[]> {
   if (!mongoose.isValidObjectId(roomId)) throw notFound('room not found');
-  const stats = await Session.aggregate<{ _id: string; totalDuration: number }>([
-    {
-      $match: {
-        roomId: new mongoose.Types.ObjectId(roomId),
-        endTime: { $ne: null },
-        duration: { $ne: null },
-      },
-    },
+
+  const match: Record<string, unknown> = {
+    roomId: new mongoose.Types.ObjectId(roomId),
+    endTime: { $ne: null },
+    duration: { $ne: null },
+  };
+  if (range.from || range.to) {
+    const startRange: Record<string, Date> = {};
+    if (range.from) startRange.$gte = range.from;
+    if (range.to) startRange.$lte = range.to;
+    match.startTime = startRange;
+  }
+
+  const stats = await Session.aggregate<{
+    _id: string;
+    totalDuration: number;
+    sessionCount: number;
+  }>([
+    { $match: match },
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m-%d', date: '$startTime' } },
         totalDuration: { $sum: '$duration' },
+        sessionCount: { $sum: 1 },
       },
     },
     { $sort: { _id: 1 } },
   ]);
 
-  return stats.map((s) => ({ date: s._id, totalDuration: s.totalDuration }));
+  return stats.map((s) => ({
+    date: s._id,
+    totalDuration: s.totalDuration,
+    sessionCount: s.sessionCount,
+  }));
 }
 
 // exported for tests / future need

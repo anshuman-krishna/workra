@@ -79,6 +79,7 @@ export interface PublicTask {
 export interface SessionStat {
   date: string;
   totalDuration: number;
+  sessionCount: number;
 }
 
 export interface RoomInvite {
@@ -104,7 +105,7 @@ export interface FileWithUrl extends PublicFile {
   expiresAt: string;
 }
 
-export const ACTIVITY_CATEGORIES = ['session', 'task', 'file', 'room', 'chat'] as const;
+export const ACTIVITY_CATEGORIES = ['session', 'task', 'file', 'room', 'chat', 'event'] as const;
 export type ActivityCategory = (typeof ACTIVITY_CATEGORIES)[number];
 
 // single source of truth for activity events. both backend and frontend import from here.
@@ -122,6 +123,8 @@ export const ACTIVITY_TYPES = [
   'file_versioned',
   'file_deleted',
   'message_sent',
+  'event_created',
+  'event_deleted',
 ] as const;
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 
@@ -138,6 +141,8 @@ export const ACTIVITY_CATEGORY: Record<ActivityType, ActivityCategory> = {
   file_versioned: 'file',
   file_deleted: 'file',
   message_sent: 'chat',
+  event_created: 'event',
+  event_deleted: 'event',
 };
 
 export interface PublicActivity {
@@ -169,4 +174,48 @@ export interface PublicMessage {
   attachments: MessageAttachment[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PublicEvent {
+  id: string;
+  roomId: string;
+  title: string;
+  description: string | null;
+  type: 'deadline' | 'meeting' | 'milestone';
+  date: string;
+  createdBy: PublicMember;
+  createdAt: string;
+}
+
+// per-day calendar rollup used by both the room and dashboard calendars.
+// date is yyyy-mm-dd in the user's local timezone (the server returns utc grouping;
+// the frontend re-groups when it needs local days).
+export interface CalendarDay {
+  date: string;
+  totalDuration: number;
+  sessionCount: number;
+  completedTaskCount: number;
+  eventCount: number;
+}
+
+export interface RoomCalendarResponse {
+  days: CalendarDay[];
+  events: PublicEvent[];
+}
+
+// per-day rollup for the dashboard, with a breakdown of which rooms contributed.
+export interface DashboardCalendarDay {
+  date: string;
+  totalDuration: number;
+  sessionCount: number;
+  rooms: Array<{
+    roomId: string;
+    roomName: string;
+    totalDuration: number;
+    sessionCount: number;
+  }>;
+}
+
+export interface DashboardCalendarResponse {
+  days: DashboardCalendarDay[];
 }

@@ -108,6 +108,18 @@ function formatActivity(log: ActivityLogDoc, user: PublicMember): PublicActivity
       title = 'deleted a file';
       subtitle = (meta.name as string) ?? null;
       break;
+    case 'event_created': {
+      const eventType = (meta.eventType as string) ?? 'event';
+      title = `scheduled a ${eventType}`;
+      subtitle = (meta.title as string) ?? null;
+      break;
+    }
+    case 'event_deleted': {
+      const eventType = (meta.eventType as string) ?? 'event';
+      title = `removed a ${eventType}`;
+      subtitle = (meta.title as string) ?? null;
+      break;
+    }
   }
 
   return {
@@ -149,7 +161,14 @@ export async function listRoomActivity(
   if (!membership) throw forbidden('not a member of this room');
 
   const filter: Record<string, unknown> = { roomId };
-  if (query.category) filter.type = { $in: typesForCategory(query.category) };
+  if (query.category) {
+    // explicit category filter: honour it exactly (including chat if asked)
+    filter.type = { $in: typesForCategory(query.category) };
+  } else {
+    // default timeline is "work events only" — chat lives in its own tab.
+    // message_sent rows are still written, just hidden from the default view.
+    filter.type = { $nin: typesForCategory('chat') };
+  }
   if (query.before) filter.createdAt = { $lt: new Date(query.before) };
 
   const logs = await ActivityLog.find(filter)

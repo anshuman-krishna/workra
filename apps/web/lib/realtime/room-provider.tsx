@@ -123,9 +123,18 @@ export function RoomRealtimeProvider({ roomId }: Props) {
       });
     }
 
-    // re-join after a reconnect so the server-side room membership is restored
+    // re-join after a reconnect so the server-side room membership is restored,
+    // then force-refetch the room-scoped caches so we pick up anything that
+    // happened during the disconnect window.
     const onReconnect = () => {
-      if (!cancelled) void subscribe();
+      if (cancelled) return;
+      void subscribe();
+      qc.invalidateQueries({ queryKey: ['messages', roomId] });
+      qc.invalidateQueries({ queryKey: ['sessions', roomId] });
+      qc.invalidateQueries({ queryKey: ['session-stats', roomId] });
+      qc.invalidateQueries({ queryKey: ['tasks', roomId] });
+      qc.invalidateQueries({ queryKey: ['activity', roomId] });
+      qc.invalidateQueries({ queryKey: ['session', 'active'] });
     };
     socket.io.on('reconnect', onReconnect);
 

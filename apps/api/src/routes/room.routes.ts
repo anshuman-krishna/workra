@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import {
+  createEventSchema,
   createMessageSchema,
   createRoomSchema,
   createTaskSchema,
   joinRoomSchema,
   listActivityQuerySchema,
+  listEventsQuerySchema,
   listMessagesQuerySchema,
   listSessionsQuerySchema,
   listTasksQuerySchema,
@@ -15,6 +17,8 @@ import * as taskController from '../controllers/task.controller.js';
 import * as fileController from '../controllers/file.controller.js';
 import * as activityController from '../controllers/activity.controller.js';
 import * as messageController from '../controllers/message.controller.js';
+import * as eventController from '../controllers/event.controller.js';
+import * as calendarController from '../controllers/calendar.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
 import { uploadMiddleware } from './file.routes.js';
@@ -94,6 +98,26 @@ router.post(
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(createMessageSchema),
   messageController.send,
+);
+
+router.get(
+  '/:id/events',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateQuery(listEventsQuerySchema),
+  eventController.list,
+);
+
+router.post(
+  '/:id/events',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateBody(createEventSchema),
+  eventController.create,
+);
+
+router.get(
+  '/:id/calendar',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  calendarController.getRoomCalendar,
 );
 
 export default router;
