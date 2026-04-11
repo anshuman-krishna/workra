@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { CalendarDay, PublicEvent, PublicSession } from '@workra/shared';
@@ -11,7 +12,7 @@ import { sessionsApi } from '@/lib/api/sessions';
 import { tasksApi } from '@/lib/api/tasks';
 import { formatDuration, localDateKey } from '@/lib/format/time';
 import { buildMonthGrid, monthGridBounds, monthLabel, shiftMonth } from '@/lib/calendar/grid';
-import { HEAT_CLASSES, heatLevel } from '@/lib/calendar/heatmap';
+import { HEAT_CLASSES, heatClamp, heatLevel } from '@/lib/calendar/heatmap';
 import { cn } from '@/lib/utils';
 import { CreateEventDialog } from './create-event-dialog';
 
@@ -81,11 +82,10 @@ export function RoomCalendar({ roomId }: Props) {
     return map;
   }, [calendarData]);
 
-  const maxDuration = useMemo(() => {
-    let max = 0;
-    for (const d of dayMap.values()) if (d.totalDuration > max) max = d.totalDuration;
-    return max;
-  }, [dayMap]);
+  const heatClampValue = useMemo(
+    () => heatClamp(Array.from(dayMap.values(), (d) => d.totalDuration)),
+    [dayMap],
+  );
 
   // month totals for the header summary
   const monthSummary = useMemo(() => {
@@ -189,7 +189,7 @@ export function RoomCalendar({ roomId }: Props) {
                 <div className="mt-2 grid grid-cols-7 gap-1">
                   {grid.map((cell) => {
                     const day = dayMap.get(cell.key);
-                    const level = day ? heatLevel(day.totalDuration, maxDuration) : 0;
+                    const level = day ? heatLevel(day.totalDuration, heatClampValue) : 0;
                     const visible = day ? dayHasContent(day, filter) : false;
                     const heatClass =
                       filter === 'all' || filter === 'sessions'
@@ -378,12 +378,16 @@ function DayDetail({ roomId, dateKey, date, events, day }: DetailProps) {
           emptyLabel={completedOnThisDay.length === 0 ? 'none yet' : null}
         >
           {completedOnThisDay.map((t) => (
-            <div key={t.id} className="text-sm">
+            <Link
+              key={t.id}
+              href={`/rooms/${roomId}/tasks`}
+              className="block rounded-md border border-transparent px-1 py-0.5 text-sm transition-colors hover:border-border hover:bg-muted/40"
+            >
               <p className="truncate">{t.title}</p>
               {t.assignee && (
                 <p className="text-xs text-muted-foreground">{t.assignee.displayName}</p>
               )}
-            </div>
+            </Link>
           ))}
         </Section>
       </CardContent>

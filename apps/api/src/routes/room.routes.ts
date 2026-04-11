@@ -10,6 +10,7 @@ import {
   listMessagesQuerySchema,
   listSessionsQuerySchema,
   listTasksQuerySchema,
+  reportQuerySchema,
 } from '@workra/shared';
 import * as roomController from '../controllers/room.controller.js';
 import * as sessionController from '../controllers/session.controller.js';
@@ -19,6 +20,7 @@ import * as activityController from '../controllers/activity.controller.js';
 import * as messageController from '../controllers/message.controller.js';
 import * as eventController from '../controllers/event.controller.js';
 import * as calendarController from '../controllers/calendar.controller.js';
+import * as reportController from '../controllers/report.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
 import { uploadMiddleware } from './file.routes.js';
@@ -118,6 +120,13 @@ router.get(
   '/:id/calendar',
   requireRoomRole(['owner', 'collaborator', 'client']),
   calendarController.getRoomCalendar,
+);
+
+router.get(
+  '/:id/report',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateQuery(reportQuerySchema),
+  reportController.getRoomReport,
 );
 
 export default router;

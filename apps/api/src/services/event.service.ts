@@ -140,10 +140,14 @@ export async function deleteEvent(userId: string, eventId: string): Promise<void
   const event = await EventModel.findById(eventId);
   if (!event) throw notFound('event not found');
 
-  // only the creator can delete their own event. owners will likely want broader
-  // moderation later; leaving that to a future role-aware pass.
-  if (String(event.createdBy) !== userId) {
-    throw forbidden('cannot delete others\' events');
+  // creators can always remove their own event. room owners can clean up anything
+  // on the room calendar (planning often requires this). everyone else is blocked.
+  const isCreator = String(event.createdBy) === userId;
+  if (!isCreator) {
+    const membership = await Membership.findOne({ userId, roomId: event.roomId });
+    if (!membership || membership.role !== 'owner') {
+      throw forbidden('cannot delete others\' events');
+    }
   }
 
   await event.deleteOne();

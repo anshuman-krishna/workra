@@ -26,6 +26,8 @@ const taskSchema = new Schema(
 // list-by-room is the dominant query
 taskSchema.index({ roomId: 1, status: 1, createdAt: -1 });
 taskSchema.index({ assignedTo: 1 });
+// report + calendar aggregations group by completion day in a date range
+taskSchema.index({ roomId: 1, completedAt: 1 });
 
 export type TaskDoc = InferSchemaType<typeof taskSchema> & {
   _id: Schema.Types.ObjectId;

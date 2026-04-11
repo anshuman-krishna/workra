@@ -6,7 +6,7 @@ import type { DashboardCalendarDay } from '@workra/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { calendarApi } from '@/lib/api/calendar';
 import { formatDuration, localDateKey } from '@/lib/format/time';
-import { HEAT_CLASSES, heatLevel } from '@/lib/calendar/heatmap';
+import { HEAT_CLASSES, heatClamp, heatLevel } from '@/lib/calendar/heatmap';
 import { cn } from '@/lib/utils';
 
 // builds a 53-week x 7-day grid ending on today, rolling back a full year.
@@ -80,11 +80,10 @@ export function DashboardCalendar() {
     return map;
   }, [data]);
 
-  const maxDuration = useMemo(() => {
-    let max = 0;
-    for (const d of dayMap.values()) if (d.totalDuration > max) max = d.totalDuration;
-    return max;
-  }, [dayMap]);
+  const heatClampValue = useMemo(
+    () => heatClamp(Array.from(dayMap.values(), (d) => d.totalDuration)),
+    [dayMap],
+  );
 
   const totals = useMemo(() => {
     let totalDuration = 0;
@@ -147,7 +146,7 @@ export function DashboardCalendar() {
                           );
                         }
                         const day = dayMap.get(cell.key);
-                        const level = day ? heatLevel(day.totalDuration, maxDuration) : 0;
+                        const level = day ? heatLevel(day.totalDuration, heatClampValue) : 0;
                         return (
                           <button
                             type="button"

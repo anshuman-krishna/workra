@@ -219,3 +219,56 @@ export interface DashboardCalendarDay {
 export interface DashboardCalendarResponse {
   days: DashboardCalendarDay[];
 }
+
+// per-day roll-up for the report's daily breakdown section
+export interface ReportDailyEntry {
+  date: string;
+  totalDuration: number;
+  sessionCount: number;
+  completedTaskCount: number;
+}
+
+// top tasks by tracked time in the report range. duration is the sum of sessions
+// whose linkedTaskId matches. tasks without any linked time don't appear here.
+export interface ReportTopTask {
+  taskId: string;
+  title: string;
+  status: 'todo' | 'in_progress' | 'done';
+  totalDuration: number;
+  sessionCount: number;
+}
+
+export interface ReportRoomSummary {
+  id: string;
+  name: string;
+}
+
+export interface ReportRange {
+  from: string;
+  to: string;
+}
+
+export interface ReportResponse {
+  room: ReportRoomSummary;
+  range: ReportRange;
+  scope: {
+    userId: string | null;
+    user: PublicMember | null;
+  };
+  summary: {
+    totalDuration: number;
+    sessionCount: number;
+    taskCompletedCount: number;
+    activeDays: number;
+    eventCount: number;
+    // a structured paragraph the frontend can render or copy. no ai yet — just a
+    // deterministic template built from the numbers above.
+    narrative: string;
+  };
+  daily: ReportDailyEntry[];
+  topTasks: ReportTopTask[];
+  sessions: PublicSession[];
+  completedTasks: PublicTask[];
+  events: PublicEvent[];
+  generatedAt: string;
+}
