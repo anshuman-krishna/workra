@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { RoomTabs } from '@/components/room/room-tabs';
 import { roomsApi } from '@/lib/api/rooms';
+import { RoomRealtimeProvider } from '@/lib/realtime/room-provider';
 
 export default function RoomLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ id: string }>();
@@ -62,6 +63,7 @@ export default function RoomLayout({ children }: { children: React.ReactNode }) 
 
       <RoomTabs roomId={room.id} />
 
+      <RoomRealtimeProvider roomId={room.id} />
       {children}
     </div>
   );

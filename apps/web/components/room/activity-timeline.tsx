@@ -8,6 +8,7 @@ import {
   File as FileIcon,
   ListChecks,
   LogIn,
+  MessageSquare,
   Pencil,
   Sparkles,
   Timer,
@@ -38,6 +39,7 @@ const ICONS: Record<ActivityType, LucideIcon> = {
   file_uploaded: Upload,
   file_versioned: FileIcon,
   file_deleted: Trash2,
+  message_sent: MessageSquare,
 };
 
 const FILTERS: Array<{ value: ActivityCategory | 'all'; label: string }> = [
@@ -45,6 +47,7 @@ const FILTERS: Array<{ value: ActivityCategory | 'all'; label: string }> = [
   { value: 'session', label: 'sessions' },
   { value: 'task', label: 'tasks' },
   { value: 'file', label: 'files' },
+  { value: 'chat', label: 'chat' },
   { value: 'room', label: 'room' },
 ];
 

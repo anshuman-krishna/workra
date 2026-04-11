@@ -5,6 +5,7 @@ import { User } from '../models/user.model.js';
 import { Task } from '../models/task.model.js';
 import { badRequest, conflict, forbidden, notFound } from '../utils/errors.js';
 import * as activityLog from './activity-log.service.js';
+import * as realtime from '../realtime/emit.js';
 import type { ListSessionsQuery, PublicSession, SessionStat, TaskRef } from '@workra/shared';
 
 interface PopulatedUser {
@@ -141,7 +142,9 @@ export async function startSession(
   });
 
   const member = await loadUserMember(userId);
-  return toPublicSession(session, member, linkedTaskRef);
+  const payload = toPublicSession(session, member, linkedTaskRef);
+  realtime.emitSessionStarted(roomId, payload);
+  return payload;
 }
 
 export async function stopSession(
@@ -175,7 +178,9 @@ export async function stopSession(
 
   const member = await loadUserMember(userId);
   const linkedTask = await loadTaskRef(active.linkedTaskId as mongoose.Types.ObjectId | null);
-  return toPublicSession(active, member, linkedTask);
+  const payload = toPublicSession(active, member, linkedTask);
+  realtime.emitSessionStopped(String(active.roomId), payload);
+  return payload;
 }
 
 export async function getActiveSession(userId: string): Promise<PublicSession | null> {

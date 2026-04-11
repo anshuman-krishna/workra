@@ -5,6 +5,7 @@ import { User } from '../models/user.model.js';
 import { Session } from '../models/session.model.js';
 import { badRequest, forbidden, notFound } from '../utils/errors.js';
 import * as activityLog from './activity-log.service.js';
+import * as realtime from '../realtime/emit.js';
 import type {
   CreateTaskInput,
   ListTasksQuery,
@@ -109,7 +110,9 @@ export async function createTask(
   });
 
   const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
-  return toPublicTask(task, assignee);
+  const payload = toPublicTask(task, assignee);
+  realtime.emitTaskChanged(roomId, { type: 'created', task: payload });
+  return payload;
 }
 
 export async function listTasks(
@@ -213,7 +216,9 @@ export async function updateTask(
   });
 
   const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
-  return toPublicTask(task, assignee);
+  const payload = toPublicTask(task, assignee);
+  realtime.emitTaskChanged(roomId, { type: 'updated', task: payload });
+  return payload;
 }
 
 export async function deleteTask(userId: string, taskId: string): Promise<void> {
@@ -232,6 +237,8 @@ export async function deleteTask(userId: string, taskId: string): Promise<void> 
     entityId: String(task._id),
     metadata: { title: task.title },
   });
+
+  realtime.emitTaskChanged(roomId, { type: 'deleted', taskId: String(task._id) });
 }
 
 export async function listSessionsForTask(

@@ -5,6 +5,7 @@ import userRoutes from './user.routes.js';
 import sessionRoutes from './session.routes.js';
 import taskRoutes from './task.routes.js';
 import fileRoutes from './file.routes.js';
+import messageRoutes from './message.routes.js';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/users', userRoutes);
 router.use('/sessions', sessionRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/files', fileRoutes);
+router.use('/messages', messageRoutes);
 
 export default router;

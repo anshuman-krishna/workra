@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import {
+  createMessageSchema,
   createRoomSchema,
   createTaskSchema,
   joinRoomSchema,
   listActivityQuerySchema,
+  listMessagesQuerySchema,
   listSessionsQuerySchema,
   listTasksQuerySchema,
 } from '@workra/shared';
@@ -12,6 +14,7 @@ import * as sessionController from '../controllers/session.controller.js';
 import * as taskController from '../controllers/task.controller.js';
 import * as fileController from '../controllers/file.controller.js';
 import * as activityController from '../controllers/activity.controller.js';
+import * as messageController from '../controllers/message.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
 import { uploadMiddleware } from './file.routes.js';
@@ -77,6 +80,20 @@ router.get(
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateQuery(listActivityQuerySchema),
   activityController.listRoomActivity,
+);
+
+router.get(
+  '/:id/messages',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateQuery(listMessagesQuerySchema),
+  messageController.list,
+);
+
+router.post(
+  '/:id/messages',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateBody(createMessageSchema),
+  messageController.send,
 );
 
 export default router;

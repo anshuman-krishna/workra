@@ -1,18 +1,25 @@
+import { createServer } from 'node:http';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { logger } from './utils/logger.js';
+import { initRealtime, shutdownRealtime } from './realtime/io.js';
 
 async function bootstrap() {
   await connectDatabase();
   const app = createApp();
 
-  const server = app.listen(env.PORT, () => {
+  // wrap express in an http.Server so socket.io can share the same port.
+  const server = createServer(app);
+  initRealtime(server);
+
+  server.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, `api listening on http://localhost:${env.PORT}`);
   });
 
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'shutting down');
+    await shutdownRealtime();
     server.close(async () => {
       await disconnectDatabase();
       process.exit(0);

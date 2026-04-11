@@ -104,20 +104,41 @@ export interface FileWithUrl extends PublicFile {
   expiresAt: string;
 }
 
-export type ActivityCategory = 'session' | 'task' | 'file' | 'room';
+export const ACTIVITY_CATEGORIES = ['session', 'task', 'file', 'room', 'chat'] as const;
+export type ActivityCategory = (typeof ACTIVITY_CATEGORIES)[number];
 
-export type ActivityType =
-  | 'session_started'
-  | 'session_completed'
-  | 'room_created'
-  | 'room_joined'
-  | 'task_created'
-  | 'task_updated'
-  | 'task_completed'
-  | 'task_deleted'
-  | 'file_uploaded'
-  | 'file_versioned'
-  | 'file_deleted';
+// single source of truth for activity events. both backend and frontend import from here.
+// adding an event: add it to ACTIVITY_TYPES and ACTIVITY_CATEGORY so both sides stay in sync.
+export const ACTIVITY_TYPES = [
+  'session_started',
+  'session_completed',
+  'room_created',
+  'room_joined',
+  'task_created',
+  'task_updated',
+  'task_completed',
+  'task_deleted',
+  'file_uploaded',
+  'file_versioned',
+  'file_deleted',
+  'message_sent',
+] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
+export const ACTIVITY_CATEGORY: Record<ActivityType, ActivityCategory> = {
+  session_started: 'session',
+  session_completed: 'session',
+  room_created: 'room',
+  room_joined: 'room',
+  task_created: 'task',
+  task_updated: 'task',
+  task_completed: 'task',
+  task_deleted: 'task',
+  file_uploaded: 'file',
+  file_versioned: 'file',
+  file_deleted: 'file',
+  message_sent: 'chat',
+};
 
 export interface PublicActivity {
   id: string;
@@ -129,4 +150,23 @@ export interface PublicActivity {
   entityId: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
+}
+
+// minimal file summary embedded inside messages. keeps the chat payload self-sufficient
+// so the client doesn't need a second round-trip to render attachments.
+export interface MessageAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
+export interface PublicMessage {
+  id: string;
+  roomId: string;
+  content: string;
+  sender: PublicMember;
+  attachments: MessageAttachment[];
+  createdAt: string;
+  updatedAt: string;
 }
