@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Copy, Download, FileText, Loader2 } from 'lucide-react';
+import { Copy, Download, FileText, Loader2, Sparkles } from 'lucide-react';
 import type { ReportResponse } from '@workra/shared';
 
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ReportView } from '@/components/report/report-view';
 import { roomsApi } from '@/lib/api/rooms';
-import { reportsApi, type ReportFilters } from '@/lib/api/reports';
+import { reportsApi, browserTz, type ReportFilters } from '@/lib/api/reports';
 import { ApiError } from '@/lib/api/client';
 import { localDateKey } from '@/lib/format/time';
 
@@ -34,6 +34,9 @@ export default function ReportsPage() {
   const [{ from, to }, setRange] = useState(defaultRange);
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [downloading, setDownloading] = useState(false);
+  // tracks whether the current narrative came from the ai layer. resets whenever
+  // the user regenerates the base report.
+  const [aiEnhanced, setAiEnhanced] = useState(false);
 
   // auto-select the first room once the list loads
   const availableRooms = rooms.data?.rooms ?? [];
@@ -43,19 +46,51 @@ export default function ReportsPage() {
     }
   }, [roomId, availableRooms]);
 
+  const tz = useMemo(() => browserTz(), []);
+
   const generate = useMutation({
     mutationFn: async (filters: { roomId: string } & ReportFilters) => {
       const res = await reportsApi.getRoomReport(filters.roomId, {
         from: filters.from,
         to: filters.to,
+        tz: filters.tz,
       });
       return res.report;
     },
     onSuccess: (r) => {
       setReport(r);
+      setAiEnhanced(false);
     },
     onError: (err) => {
       toast.error(err instanceof ApiError ? err.message : 'could not generate report');
+    },
+  });
+
+  // second mutation for the ai narrative. runs on top of an already-rendered
+  // report — never blocks the user from interacting with the rest of the view.
+  const enhance = useMutation({
+    mutationFn: async () => {
+      if (!report) throw new Error('no report to enhance');
+      return reportsApi.enhanceNarrative(report.room.id, {
+        from,
+        to,
+        tz,
+      });
+    },
+    onSuccess: (res) => {
+      if (!report) return;
+      if (!res.aiGenerated) {
+        // the server tried the llm and fell back. let the user know rather than
+        // silently pretending — workra's whole voice is "we don't lie to you".
+        toast.message('ai layer unavailable — keeping the system summary');
+        return;
+      }
+      setReport({ ...report, summary: { ...report.summary, narrative: res.narrative } });
+      setAiEnhanced(true);
+      toast.success('narrative enhanced');
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : 'could not enhance narrative');
     },
   });
 
@@ -66,7 +101,7 @@ export default function ReportsPage() {
       toast.error('pick a room and a valid range');
       return;
     }
-    generate.mutate({ roomId, from, to });
+    generate.mutate({ roomId, from, to, tz });
   };
 
   const onCopySummary = async () => {
@@ -83,7 +118,7 @@ export default function ReportsPage() {
     if (!report) return;
     setDownloading(true);
     try {
-      const blob = await reportsApi.downloadRoomReportPdf(report.room.id, { from, to });
+      const blob = await reportsApi.downloadRoomReportPdf(report.room.id, { from, to, tz });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -171,7 +206,23 @@ export default function ReportsPage() {
           </div>
 
           {report && (
-            <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
+            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => enhance.mutate()}
+                disabled={enhance.isPending}
+              >
+                {enhance.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> thinking
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" /> enhance with ai
+                  </>
+                )}
+              </Button>
               <Button variant="outline" size="sm" onClick={onCopySummary}>
                 <Copy className="mr-2 h-4 w-4" /> copy summary
               </Button>
@@ -191,6 +242,11 @@ export default function ReportsPage() {
                   </>
                 )}
               </Button>
+              {aiEnhanced && (
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-border/60 px-2 py-0.5 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" /> ai-enhanced narrative
+                </span>
+              )}
             </div>
           )}
         </CardContent>

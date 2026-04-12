@@ -7,7 +7,9 @@ import { User } from '../models/user.model.js';
 import { forbidden, notFound } from '../utils/errors.js';
 import { listRoomSessions } from './session.service.js';
 import { listEvents } from './event.service.js';
+import * as ai from './ai.service.js';
 import type {
+  AiSummaryResponse,
   PublicMember,
   PublicSession,
   PublicTask,
@@ -20,6 +22,7 @@ interface ReportInput {
   from: string;
   to: string;
   userId?: string;
+  tz?: string;
 }
 
 interface RoomRow {
@@ -47,11 +50,71 @@ interface UserRow {
   avatarSeed: string;
 }
 
-function parseRangeBoundary(input: string, end: boolean): Date {
+// returns the offset (in minutes, east-of-utc positive) that `tz` was at `at`.
+// used to translate bare yyyy-mm-dd bounds into the correct utc instants so that
+// "2026-04-01 to 2026-04-30" in the user's timezone doesn't drift by up to 14 hours.
+function offsetMinutesForTz(at: Date, tz: string): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const parts = dtf.formatToParts(at).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== 'literal') acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const hour = parts.hour === '24' ? '0' : parts.hour;
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(hour),
+    Number(parts.minute),
+    Number(parts.second),
+  );
+  return Math.round((asUtc - at.getTime()) / 60000);
+}
+
+// turns yyyy-mm-dd into the utc instant matching 00:00 or 23:59:59.999 in `tz`.
+// full iso strings are passed through untouched.
+function parseRangeBoundary(input: string, end: boolean, tz: string): Date {
   if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-    return new Date(`${input}T${end ? '23:59:59.999' : '00:00:00.000'}Z`);
+    // use noon to sidestep dst boundary oddities around midnight
+    const noonUtc = new Date(`${input}T12:00:00.000Z`);
+    const offset = offsetMinutesForTz(noonUtc, tz);
+    const wall = Date.parse(
+      `${input}T${end ? '23:59:59.999' : '00:00:00.000'}Z`,
+    );
+    return new Date(wall - offset * 60000);
   }
   return new Date(input);
+}
+
+// yyyy-mm-dd label for a moment in a specific timezone, used to bucket completed
+// tasks by the same day the aggregation pipeline is already grouping by.
+function formatDayInTz(at: Date, tz: string): string {
+  const dtf = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  return dtf.format(at);
+}
+
+function safeTz(tz: string | undefined): string {
+  if (!tz) return 'UTC';
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return tz;
+  } catch {
+    return 'UTC';
+  }
 }
 
 function formatDurationPretty(ms: number): string {
@@ -127,8 +190,9 @@ export async function generateRoomReport(
   const room = (await Room.findById(roomId).select('name').lean()) as unknown as RoomRow | null;
   if (!room) throw notFound('room not found');
 
-  const from = parseRangeBoundary(input.from, false);
-  const to = parseRangeBoundary(input.to, true);
+  const tz = safeTz(input.tz);
+  const from = parseRangeBoundary(input.from, false, tz);
+  const to = parseRangeBoundary(input.to, true, tz);
   const roomObjectId = new mongoose.Types.ObjectId(roomId);
 
   // scope resolution: if userId is passed and not the viewer, ensure they're a
@@ -161,6 +225,7 @@ export async function generateRoomReport(
   if (scopeUserId) sessionMatch.userId = new mongoose.Types.ObjectId(scopeUserId);
 
   // headline totals + per-day rollup in one aggregation so we don't scan twice.
+  // $dateToString uses the caller's tz so the frontend's day buckets line up.
   const [daily] = await Promise.all([
     Session.aggregate<{
       _id: string;
@@ -170,7 +235,7 @@ export async function generateRoomReport(
       { $match: sessionMatch },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$startTime' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$startTime', timezone: tz } },
           totalDuration: { $sum: '$duration' },
           sessionCount: { $sum: 1 },
         },
@@ -180,6 +245,7 @@ export async function generateRoomReport(
   ]);
 
   // top tasks: sum session duration grouped by linkedTaskId, then hydrate titles.
+  // secondary sort on _id keeps order stable when two tasks share the same duration.
   const topRows = await Session.aggregate<{
     _id: mongoose.Types.ObjectId;
     totalDuration: number;
@@ -193,7 +259,7 @@ export async function generateRoomReport(
         sessionCount: { $sum: 1 },
       },
     },
-    { $sort: { totalDuration: -1 } },
+    { $sort: { totalDuration: -1, _id: 1 } },
     { $limit: 5 },
   ]);
 
@@ -236,7 +302,7 @@ export async function generateRoomReport(
     completedTaskFilter.assignedTo = new mongoose.Types.ObjectId(scopeUserId);
   }
   const completedRows = (await Task.find(completedTaskFilter)
-    .sort({ completedAt: -1 })
+    .sort({ completedAt: -1, _id: 1 })
     .lean()) as unknown as TaskRow[];
 
   // hydrate assignees for completed tasks in one query
@@ -293,10 +359,11 @@ export async function generateRoomReport(
     completedTaskCount: 0,
   }));
   const dailyMap = new Map(dailyWithTasks.map((d) => [d.date, d]));
-  // fold completed task counts into the same daily rows
+  // fold completed task counts into the same daily rows. key off the caller's tz
+  // so a task completed at 11pm local time lands on the same day the user sees.
   for (const task of completedRows) {
     if (!task.completedAt) continue;
-    const key = task.completedAt.toISOString().slice(0, 10);
+    const key = formatDayInTz(task.completedAt, tz);
     const existing = dailyMap.get(key);
     if (existing) {
       existing.completedTaskCount += 1;
@@ -343,4 +410,54 @@ export async function generateRoomReport(
     events,
     generatedAt: new Date().toISOString(),
   };
+}
+
+// regenerates the report and asks the ai layer for a nicer narrative. callers
+// could short-circuit by passing in a cached report, but we always rebuild so
+// the ai narrative cannot drift from the numbers it claims to describe.
+export async function generateAiReportNarrative(
+  viewerId: string,
+  roomId: string,
+  input: ReportInput,
+): Promise<AiSummaryResponse> {
+  const report = await generateRoomReport(viewerId, roomId, input);
+
+  const totalsLabel = formatDurationPretty(report.summary.totalDuration);
+  const result = await ai.generateReportNarrative({
+    roomName: report.room.name,
+    scopeLabel: report.scope.user ? report.scope.user.displayName : 'the team',
+    rangeLabel: `${report.range.from.slice(0, 10)} to ${report.range.to.slice(0, 10)}`,
+    totals: {
+      tracked: totalsLabel,
+      sessionCount: report.summary.sessionCount,
+      taskCompletedCount: report.summary.taskCompletedCount,
+      activeDays: report.summary.activeDays,
+      rangeDays: Math.max(
+        1,
+        Math.round(
+          (new Date(report.range.to).getTime() -
+            new Date(report.range.from).getTime()) /
+            (24 * 60 * 60 * 1000),
+        ) + 1,
+      ),
+      eventCount: report.summary.eventCount,
+    },
+    topTasks: report.topTasks.map((t) => ({
+      title: t.title,
+      duration: formatDurationPretty(t.totalDuration),
+    })),
+    dailyHighlights: report.daily
+      .slice()
+      .sort((a, b) => b.totalDuration - a.totalDuration)
+      .slice(0, 3)
+      .map((d) => ({ date: d.date, duration: formatDurationPretty(d.totalDuration) })),
+    recentSessions: report.sessions.slice(0, 6).map((s) => ({
+      intent: s.intent,
+      summary: s.summary,
+      duration: formatDurationPretty(s.duration ?? 0),
+    })),
+    fallback: report.summary.narrative,
+  });
+
+  return { narrative: result.text, aiGenerated: result.aiGenerated };
 }

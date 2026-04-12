@@ -5,6 +5,7 @@ import {
   createRoomSchema,
   createTaskSchema,
   joinRoomSchema,
+  aiSummaryRequestSchema,
   listActivityQuerySchema,
   listEventsQuerySchema,
   listMessagesQuerySchema,
@@ -127,6 +128,13 @@ router.get(
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateQuery(reportQuerySchema),
   reportController.getRoomReport,
+);
+
+router.post(
+  '/:id/report/ai-summary',
+  requireRoomRole(['owner', 'collaborator', 'client']),
+  validateBody(aiSummaryRequestSchema),
+  reportController.getRoomReportAiSummary,
 );
 
 export default router;

@@ -24,6 +24,12 @@ const envSchema = z.object({
   STORAGE_LOCAL_DIR: z.string().default('./uploads'),
   STORAGE_SIGNED_URL_TTL: z.coerce.number().int().positive().default(900),
   STORAGE_MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(25 * 1024 * 1024),
+  // ai layer: optional. if ANTHROPIC_API_KEY is unset the ai service falls back
+  // to the deterministic narrative / suggestion builders so nothing 500s.
+  ANTHROPIC_API_KEY: z.string().optional(),
+  AI_MODEL: z.string().default('claude-haiku-4-5'),
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
+  AI_MAX_TOKENS: z.coerce.number().int().positive().default(400),
 }).superRefine((data, ctx) => {
   if (data.STORAGE_DRIVER === 's3') {
     const required = ['STORAGE_BUCKET', 'STORAGE_ACCESS_KEY', 'STORAGE_SECRET_KEY'] as const;

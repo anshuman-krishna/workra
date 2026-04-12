@@ -5,8 +5,15 @@ import { User } from '../models/user.model.js';
 import { Task } from '../models/task.model.js';
 import { badRequest, conflict, forbidden, notFound } from '../utils/errors.js';
 import * as activityLog from './activity-log.service.js';
+import * as ai from './ai.service.js';
 import * as realtime from '../realtime/emit.js';
-import type { ListSessionsQuery, PublicSession, SessionStat, TaskRef } from '@workra/shared';
+import type {
+  ListSessionsQuery,
+  PublicSession,
+  SessionStat,
+  SuggestSessionSummaryResponse,
+  TaskRef,
+} from '@workra/shared';
 
 interface PopulatedUser {
   _id: mongoose.Types.ObjectId;
@@ -212,7 +219,9 @@ export async function listRoomSessions(
   }
 
   const limit = query.limit ?? 100;
-  const sessions = await Session.find(filter).sort({ startTime: -1 }).limit(limit);
+  // secondary sort on _id keeps ordering deterministic when two sessions share a
+  // start instant (happens when imported from timers that snap to the minute).
+  const sessions = await Session.find(filter).sort({ startTime: -1, _id: 1 }).limit(limit);
   if (sessions.length === 0) return [];
 
   const userIds = Array.from(new Set(sessions.map((s) => String(s.userId))));
@@ -288,6 +297,54 @@ export async function getRoomSessionStats(
     totalDuration: s.totalDuration,
     sessionCount: s.sessionCount,
   }));
+}
+
+// ask the ai layer for a draft summary of the user's active session. the caller
+// can pass the elapsed ms they've already computed on the client so the duration
+// label in the prompt matches what the user is staring at. falls back to a
+// deterministic single-sentence synthesis when the ai layer is disabled.
+export async function suggestActiveSessionSummary(
+  userId: string,
+  elapsedMsOverride?: number,
+): Promise<SuggestSessionSummaryResponse> {
+  const active = await Session.findOne({ userId, endTime: null });
+  if (!active) throw badRequest('no active session to summarise');
+
+  const linkedTask = await loadTaskRef(active.linkedTaskId as mongoose.Types.ObjectId | null);
+  const elapsedMs =
+    elapsedMsOverride ?? Math.max(0, Date.now() - active.startTime.getTime());
+
+  const durationLabel = formatElapsed(elapsedMs);
+  const fallback = buildFallbackSummary(active.intent, linkedTask?.title ?? null);
+
+  const result = await ai.suggestSessionSummary({
+    intent: active.intent,
+    linkedTaskTitle: linkedTask?.title ?? null,
+    durationLabel,
+    fallback,
+  });
+
+  return { suggestion: result.text, aiGenerated: result.aiGenerated };
+}
+
+function formatElapsed(ms: number): string {
+  const totalMinutes = Math.max(1, Math.round(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
+// deterministic fallback used when ai is disabled or unreachable. keeps the
+// user productive without ever throwing. uses the intent verbatim so the user
+// sees "something reasonable" rather than a blank textarea.
+function buildFallbackSummary(intent: string, linkedTaskTitle: string | null): string {
+  const cleaned = intent.trim().replace(/[.!?]+$/, '');
+  if (linkedTaskTitle) {
+    return `worked on ${linkedTaskTitle}: ${cleaned}.`;
+  }
+  return `${cleaned}.`;
 }
 
 // exported for tests / future need

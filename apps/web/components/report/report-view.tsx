@@ -12,6 +12,31 @@ interface Props {
 export function ReportView({ report }: Props) {
   const { summary, daily, topTasks, sessions, completedTasks } = report;
 
+  // a report with nothing to show collapses into a single calm card rather than
+  // a five-card tombstone wall. the header already displays room + range so the
+  // reader knows what they were looking at.
+  const isEmpty =
+    summary.totalDuration === 0 &&
+    summary.sessionCount === 0 &&
+    summary.taskCompletedCount === 0 &&
+    summary.eventCount === 0;
+
+  if (isEmpty) {
+    return (
+      <Card>
+        <CardContent className="space-y-3 p-8 text-center">
+          <h3 className="text-sm font-medium">nothing to report yet</h3>
+          <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">
+            {summary.narrative}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            try a wider range, or start a session in this room.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <SummaryRow summary={summary} />
@@ -19,7 +44,9 @@ export function ReportView({ report }: Props) {
       <Card>
         <CardContent className="space-y-3 p-5">
           <h3 className="text-sm font-medium">narrative</h3>
-          <p className="text-sm leading-relaxed text-muted-foreground">{summary.narrative}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+            {summary.narrative}
+          </p>
         </CardContent>
       </Card>
 

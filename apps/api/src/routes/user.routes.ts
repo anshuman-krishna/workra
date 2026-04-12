@@ -7,5 +7,6 @@ const router = Router();
 
 router.get('/me', requireAuth, userController.getMe);
 router.get('/me/calendar', requireAuth, calendarController.getDashboardCalendar);
+router.get('/me/daily-recap', requireAuth, userController.getDailyRecap);
 
 export default router;

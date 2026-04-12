@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as sessionService from '../services/session.service.js';
 import { unauthorized } from '../utils/errors.js';
-import type { ListSessionsQuery } from '@workra/shared';
+import type { ListSessionsQuery, SuggestSessionSummaryInput } from '@workra/shared';
 
 function userId(req: Request): string {
   if (!req.userId) throw unauthorized();
@@ -52,6 +52,23 @@ export async function getRoomSessionStats(req: Request, res: Response, next: Nex
   try {
     const stats = await sessionService.getRoomSessionStats(req.params.id);
     res.json({ stats });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function suggestActiveSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const body = (req.body ?? {}) as SuggestSessionSummaryInput;
+    const result = await sessionService.suggestActiveSessionSummary(
+      userId(req),
+      body.elapsedMs,
+    );
+    res.json(result);
   } catch (err) {
     next(err);
   }

@@ -118,7 +118,7 @@ export async function listEvents(
   }
   if (query.type) filter.type = query.type;
 
-  const events = await EventModel.find(filter).sort({ date: 1 });
+  const events = await EventModel.find(filter).sort({ date: 1, _id: 1 });
   if (events.length === 0) return [];
 
   const creatorMap = await loadMemberMap(

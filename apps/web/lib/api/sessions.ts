@@ -3,6 +3,7 @@ import type {
   SessionStat,
   StartSessionInput,
   StopSessionInput,
+  SuggestSessionSummaryResponse,
 } from '@workra/shared';
 import { apiFetch } from './client';
 
@@ -33,6 +34,12 @@ export const sessionsApi = {
     apiFetch<{ session: PublicSession }>('/sessions/stop', { method: 'POST', body: input }),
 
   active: () => apiFetch<{ session: PublicSession | null }>('/sessions/active'),
+
+  suggestSummary: (elapsedMs?: number) =>
+    apiFetch<SuggestSessionSummaryResponse>('/sessions/active/suggest-summary', {
+      method: 'POST',
+      body: elapsedMs !== undefined ? { elapsedMs } : {},
+    }),
 
   listForRoom: (roomId: string, filters: SessionFilters = {}) =>
     apiFetch<{ sessions: PublicSession[] }>(`/rooms/${roomId}/sessions${buildQuery(filters)}`),

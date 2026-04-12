@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DailyRecapCard } from '@/components/dashboard/daily-recap-card';
 import { roomsApi } from '@/lib/api/rooms';
 import { useAuthStore } from '@/lib/auth/store';
 
@@ -27,23 +28,12 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <DailyRecapCard />
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>active rooms</CardDescription>
             <CardTitle className="text-3xl">{rooms.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>tracked today</CardDescription>
-            <CardTitle className="text-3xl font-mono">00:00</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>open tasks</CardDescription>
-            <CardTitle className="text-3xl">—</CardTitle>
           </CardHeader>
         </Card>
       </div>

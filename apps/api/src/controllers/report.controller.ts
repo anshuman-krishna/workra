@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import * as reportService from '../services/report.service.js';
 import { renderReportPdf, buildReportFilename } from '../reports/pdf.js';
 import { unauthorized } from '../utils/errors.js';
-import type { ReportQuery } from '@workra/shared';
+import type { AiSummaryRequest, ReportQuery } from '@workra/shared';
 
 function userId(req: Request): string {
   if (!req.userId) throw unauthorized();
@@ -16,6 +16,7 @@ export async function getRoomReport(req: Request, res: Response, next: NextFunct
       from: query.from,
       to: query.to,
       userId: query.userId,
+      tz: query.tz,
     });
 
     if (query.format === 'pdf') {
@@ -30,6 +31,29 @@ export async function getRoomReport(req: Request, res: Response, next: NextFunct
     }
 
     res.json({ report });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getRoomReportAiSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const body = req.body as AiSummaryRequest;
+    const result = await reportService.generateAiReportNarrative(
+      userId(req),
+      req.params.id,
+      {
+        from: body.from,
+        to: body.to,
+        userId: body.userId,
+        tz: body.tz,
+      },
+    );
+    res.json(result);
   } catch (err) {
     next(err);
   }
