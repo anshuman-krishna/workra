@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import authRoutes from './auth.routes.js';
 import roomRoutes from './room.routes.js';
 import userRoutes from './user.routes.js';
@@ -9,10 +10,18 @@ import messageRoutes from './message.routes.js';
 import eventRoutes from './event.routes.js';
 import adminRoutes from './admin.routes.js';
 
+const bootTime = Date.now();
+
 const router = Router();
 
 router.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+  const dbState = mongoose.connection.readyState;
+  const dbStatus = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : 'disconnected';
+  res.json({
+    status: dbState === 1 ? 'ok' : 'degraded',
+    db: dbStatus,
+    uptime: Math.floor((Date.now() - bootTime) / 1000),
+  });
 });
 
 router.use('/auth', authRoutes);

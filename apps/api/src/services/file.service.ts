@@ -158,8 +158,8 @@ export async function uploadFile(
 export async function listFiles(userId: string, roomId: string): Promise<PublicFile[]> {
   await assertMember(userId, roomId);
 
-  // one row per stack: the latest version
-  const files = await FileModel.find({ roomId, isLatest: true }).sort({ createdAt: -1 });
+  // one row per stack: the latest version. capped at 500 to prevent unbounded reads.
+  const files = await FileModel.find({ roomId, isLatest: true }).sort({ createdAt: -1, _id: 1 }).limit(500);
   if (files.length === 0) return [];
 
   const uploaderMap = await loadUploaderMap(
@@ -200,7 +200,7 @@ export async function listFileVersions(userId: string, fileId: string): Promise<
   const file = await loadFileOrThrow(fileId);
   await assertMember(userId, String(file.roomId));
 
-  const versions = await FileModel.find({ rootFileId: file.rootFileId }).sort({ version: -1 });
+  const versions = await FileModel.find({ rootFileId: file.rootFileId }).sort({ version: -1, _id: 1 }).limit(200);
   if (versions.length === 0) return [];
 
   const uploaderMap = await loadUploaderMap(

@@ -172,7 +172,7 @@ export async function listRoomActivity(
   if (query.before) filter.createdAt = { $lt: new Date(query.before) };
 
   const logs = await ActivityLog.find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: 1 })
     .limit(query.limit ?? 50);
   if (logs.length === 0) return [];
 

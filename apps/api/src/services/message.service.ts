@@ -200,7 +200,7 @@ export async function listMessages(
   if (query.before) filter.createdAt = { $lt: new Date(query.before) };
 
   const messages = await Message.find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: 1 })
     .limit(query.limit ?? 30);
   if (messages.length === 0) return [];
 

@@ -24,7 +24,7 @@ import * as calendarController from '../controllers/calendar.controller.js';
 import * as reportController from '../controllers/report.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
-import { writeLimiter, aiLimiter, uploadLimiter } from '../middlewares/rate-limit.middleware.js';
+import { writeLimiter, aiLimiter, aiDailyLimiter, uploadLimiter } from '../middlewares/rate-limit.middleware.js';
 import { uploadMiddleware } from './file.routes.js';
 
 const router = Router();
@@ -138,6 +138,7 @@ router.get(
 router.post(
   '/:id/report/ai-summary',
   aiLimiter,
+  aiDailyLimiter,
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(aiSummaryRequestSchema),
   reportController.getRoomReportAiSummary,

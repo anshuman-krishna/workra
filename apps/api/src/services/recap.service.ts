@@ -160,7 +160,7 @@ function computeInsights(input: InsightInput): string[] {
     const [topId, topMs] = [...byTask.entries()].sort((a, b) => b[1] - a[1])[0];
     const title = input.taskTitleById.get(topId);
     if (title) {
-      out.push(`most time on "${title}" — ${formatDurationPretty(topMs)}.`);
+      out.push(`most time on "${title}", ${formatDurationPretty(topMs)}.`);
     }
   }
 

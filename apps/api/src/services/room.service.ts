@@ -118,7 +118,7 @@ export async function listRoomMembers(userId: string, roomId: string): Promise<P
   const membership = await Membership.findOne({ userId, roomId });
   if (!membership) throw forbidden('you are not a member of this room');
 
-  const memberships = await Membership.find({ roomId }).lean();
+  const memberships = await Membership.find({ roomId }).lean().limit(500);
   if (memberships.length === 0) return [];
 
   const userIds = memberships.map((m) => m.userId);

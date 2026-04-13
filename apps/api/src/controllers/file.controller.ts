@@ -9,12 +9,35 @@ function userId(req: Request): string {
   return req.userId;
 }
 
+// reject mime types that should never be uploaded to a workspace tool.
+// blocks executables, scripts, and system files. everything else is allowed.
+const BLOCKED_MIME_PREFIXES = [
+  'application/x-executable',
+  'application/x-msdos-program',
+  'application/x-msdownload',
+  'application/x-sh',
+  'application/x-csh',
+];
+const BLOCKED_EXTENSIONS = new Set([
+  '.exe', '.bat', '.cmd', '.com', '.msi', '.scr', '.pif', '.vbs', '.js', '.wsh', '.wsf',
+]);
+
+function isBlockedFile(name: string, mimeType: string): boolean {
+  const ext = name.slice(name.lastIndexOf('.')).toLowerCase();
+  if (BLOCKED_EXTENSIONS.has(ext)) return true;
+  return BLOCKED_MIME_PREFIXES.some((p) => mimeType.startsWith(p));
+}
+
 export async function upload(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.file) throw badRequest('no file uploaded');
+    const mime = req.file.mimetype || 'application/octet-stream';
+    if (isBlockedFile(req.file.originalname, mime)) {
+      throw badRequest('this file type is not allowed');
+    }
     const file = await fileService.uploadFile(userId(req), req.params.id, {
       name: req.file.originalname,
-      mimeType: req.file.mimetype || 'application/octet-stream',
+      mimeType: mime,
       buffer: req.file.buffer,
     });
     res.status(201).json({ file });

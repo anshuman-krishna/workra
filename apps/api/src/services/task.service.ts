@@ -126,7 +126,7 @@ export async function listTasks(
   if (query.status) filter.status = query.status;
   if (query.assignedTo) filter.assignedTo = query.assignedTo;
 
-  const tasks = await Task.find(filter).sort({ createdAt: -1 });
+  const tasks = await Task.find(filter).sort({ createdAt: -1, _id: 1 }).limit(500);
   if (tasks.length === 0) return [];
 
   const assigneeIds = Array.from(
@@ -248,7 +248,7 @@ export async function listSessionsForTask(
   const task = await loadTaskOrThrow(taskId);
   await assertMember(userId, String(task.roomId));
 
-  const sessions = await Session.find({ linkedTaskId: task._id }).sort({ startTime: -1 });
+  const sessions = await Session.find({ linkedTaskId: task._id }).sort({ startTime: -1, _id: 1 });
   if (sessions.length === 0) return [];
 
   const userIds = Array.from(new Set(sessions.map((s) => String(s.userId))));

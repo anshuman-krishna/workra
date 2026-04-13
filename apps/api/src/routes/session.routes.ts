@@ -7,7 +7,7 @@ import {
 import * as sessionController from '../controllers/session.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import { validateBody } from '../middlewares/validate.middleware.js';
-import { writeLimiter, aiLimiter } from '../middlewares/rate-limit.middleware.js';
+import { writeLimiter, aiLimiter, aiDailyLimiter } from '../middlewares/rate-limit.middleware.js';
 
 const router = Router();
 
@@ -19,6 +19,7 @@ router.get('/active', sessionController.active);
 router.post(
   '/active/suggest-summary',
   aiLimiter,
+  aiDailyLimiter,
   validateBody(suggestSessionSummarySchema),
   sessionController.suggestActiveSummary,
 );

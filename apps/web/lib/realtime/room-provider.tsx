@@ -134,6 +134,7 @@ export function RoomRealtimeProvider({ roomId }: Props) {
       qc.invalidateQueries({ queryKey: ['session-stats', roomId] });
       qc.invalidateQueries({ queryKey: ['tasks', roomId] });
       qc.invalidateQueries({ queryKey: ['activity', roomId] });
+      qc.invalidateQueries({ queryKey: ['calendar', roomId] });
       qc.invalidateQueries({ queryKey: ['session', 'active'] });
     };
     socket.io.on('reconnect', onReconnect);
