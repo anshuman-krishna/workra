@@ -18,7 +18,6 @@ interface PopulatedUser {
 }
 
 function toPublicEvent(event: EventDoc, creator: PublicMember): PublicEvent {
-  const ts = event as unknown as { createdAt: Date };
   return {
     id: String(event._id),
     roomId: String(event.roomId),
@@ -27,7 +26,7 @@ function toPublicEvent(event: EventDoc, creator: PublicMember): PublicEvent {
     type: event.type as PublicEvent['type'],
     date: event.date.toISOString(),
     createdBy: creator,
-    createdAt: ts.createdAt.toISOString(),
+    createdAt: event.createdAt.toISOString(),
   };
 }
 
@@ -98,7 +97,7 @@ export async function createEvent(
     },
   });
 
-  const creator = await loadMember(event.createdBy as mongoose.Types.ObjectId);
+  const creator = await loadMember(event.createdBy);
   return toPublicEvent(event, creator);
 }
 
@@ -122,7 +121,7 @@ export async function listEvents(
   if (events.length === 0) return [];
 
   const creatorMap = await loadMemberMap(
-    events.map((e) => e.createdBy as mongoose.Types.ObjectId),
+    events.map((e) => e.createdBy),
   );
 
   return events.map((e) => {

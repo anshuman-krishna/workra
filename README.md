@@ -71,7 +71,7 @@ frontend env:
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-the default points at `http://localhost:4000` for the api, which matches the dev script.
+the default points at `http://localhost:4000` for the api, which matches the dev script. the frontend client appends `/api/v1` automatically.
 
 ## run
 
@@ -104,13 +104,38 @@ npm run dev:web                     # start web (next dev)
 npm run build                       # build all packages
 npm run typecheck -w @workra/api    # typecheck backend
 npm run lint -w @workra/web         # lint frontend
+npm test -w @workra/api             # run api integration tests
 ```
 
 ## deployment
 
-- **frontend**: vercel or any node host. set `NEXT_PUBLIC_API_URL` to your api url. next.config is set to standalone output.
-- **backend**: railway, render, or any container host. the Dockerfile is in `apps/api/`.
-- **database**: mongodb atlas or any hosted mongodb.
+### docker compose (recommended for self-hosting)
+
+```bash
+cp apps/api/.env.example apps/api/.env
+# edit apps/api/.env: set ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, MONGODB_URI
+# the compose file starts mongo with auth. default creds are in docker-compose.yml.
+
+docker compose up -d
+```
+
+the compose file runs the api, web, and mongodb. a Caddyfile is included for reverse proxy with automatic https if you point a domain at the host.
+
+### platform hosting
+
+- **frontend**: vercel or any node host. set `NEXT_PUBLIC_API_URL` to your api's public url (without trailing slash). next.config outputs standalone mode.
+- **backend**: railway, render, fly.io, or any container host. set all required env vars from `apps/api/.env.example`. the api listens on `PORT` (default 4000).
+- **database**: mongodb atlas (free tier works) or any hosted mongodb 7+.
+- **storage**: local disk works for single-server setups. for multi-instance or persistent storage, set `STORAGE_DRIVER=s3` and point it at s3, r2, or minio.
+
+### production checklist
+
+1. generate strong secrets for `ACCESS_TOKEN_SECRET` and `REFRESH_TOKEN_SECRET`
+2. set `NODE_ENV=production` and `LOG_LEVEL=info`
+3. set `WEB_ORIGIN` to the exact frontend url (cors and cookies depend on this)
+4. set `COOKIE_DOMAIN` if api and web share a parent domain
+5. configure s3-compatible storage or mount a persistent volume for local uploads
+6. optionally set `SENTRY_DSN` for error tracking and `ANTHROPIC_API_KEY` for ai features
 
 ## admin
 

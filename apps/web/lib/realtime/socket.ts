@@ -1,5 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
-import { API_URL } from '../api/client';
+
+// socket.io connects to the host, not the api prefix
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 // single process-wide socket, lazily created. re-uses the same connection across
 // multiple room providers so opening a second tab or navigating between rooms
@@ -7,7 +9,7 @@ import { API_URL } from '../api/client';
 let socket: Socket | null = null;
 
 function buildSocket(token: string): Socket {
-  return io(API_URL, {
+  return io(SOCKET_URL, {
     path: '/socket.io',
     auth: { token },
     // let the transport upgrade from polling → websocket naturally. if the browser

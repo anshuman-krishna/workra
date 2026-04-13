@@ -2,6 +2,8 @@ import type { ErrorRequestHandler, Request, Response, NextFunction } from 'expre
 import { ZodError } from 'zod';
 import { AppError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { captureError } from '../utils/error-tracking.js';
+import { increment } from '../utils/metrics.js';
 
 export const notFoundHandler = (_req: Request, res: Response) => {
   res.status(404).json({ error: { code: 'not_found', message: 'route not found' } });
@@ -27,6 +29,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next: NextFun
   }
 
   logger.error({ err }, 'unhandled error');
+  increment('errors_total');
+  captureError(err);
   res.status(500).json({
     error: { code: 'internal_error', message: 'something went wrong' },
   });

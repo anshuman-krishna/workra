@@ -70,15 +70,14 @@ function toPublicMessage(
   sender: PublicMember,
   attachments: MessageAttachment[],
 ): PublicMessage {
-  const ts = message as unknown as { createdAt: Date; updatedAt: Date };
   return {
     id: String(message._id),
     roomId: String(message.roomId),
     content: message.content,
     sender,
     attachments,
-    createdAt: ts.createdAt.toISOString(),
-    updatedAt: ts.updatedAt.toISOString(),
+    createdAt: message.createdAt.toISOString(),
+    updatedAt: message.updatedAt.toISOString(),
   };
 }
 
@@ -180,7 +179,7 @@ export async function sendMessage(
     },
   });
 
-  const sender = await loadSender(message.senderId as mongoose.Types.ObjectId);
+  const sender = await loadSender(message.senderId);
   const payload = toPublicMessage(message, sender, attachments);
 
   // real-time push: clients in room:<roomId> receive the message; other rooms ignore it.
@@ -205,12 +204,10 @@ export async function listMessages(
   if (messages.length === 0) return [];
 
   const senderMap = await loadSenderMap(
-    messages.map((m) => m.senderId as mongoose.Types.ObjectId),
+    messages.map((m) => m.senderId),
   );
   const attachmentMap = await loadAttachmentMap(
-    messages.flatMap(
-      (m) => (m.attachmentFileIds ?? []) as unknown as mongoose.Types.ObjectId[],
-    ),
+    messages.flatMap((m) => m.attachmentFileIds),
   );
 
   return messages.map((m) => {
@@ -219,7 +216,7 @@ export async function listMessages(
       displayName: 'unknown',
       avatarSeed: '00000000',
     };
-    const attachments = ((m.attachmentFileIds ?? []) as unknown as mongoose.Types.ObjectId[])
+    const attachments = m.attachmentFileIds
       .map((id) => attachmentMap.get(String(id)))
       .filter((a): a is MessageAttachment => Boolean(a));
     return toPublicMessage(m, sender, attachments);

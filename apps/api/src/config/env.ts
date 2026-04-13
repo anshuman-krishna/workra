@@ -30,6 +30,8 @@ const envSchema = z.object({
   AI_MODEL: z.string().default('claude-haiku-4-5'),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(8000),
   AI_MAX_TOKENS: z.coerce.number().int().positive().default(400),
+  // error tracking: optional. set to enable sentry or compatible service.
+  SENTRY_DSN: z.string().url().optional(),
 }).superRefine((data, ctx) => {
   if (data.STORAGE_DRIVER === 's3') {
     const required = ['STORAGE_BUCKET', 'STORAGE_ACCESS_KEY', 'STORAGE_SECRET_KEY'] as const;

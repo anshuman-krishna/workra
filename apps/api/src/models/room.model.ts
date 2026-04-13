@@ -1,5 +1,14 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
+
+export interface IRoom {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  ownerId: mongoose.Types.ObjectId;
+  inviteCode: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const roomSchema = new Schema(
   {
@@ -10,6 +19,6 @@ const roomSchema = new Schema(
   baseSchemaOptions,
 );
 
-export type RoomDoc = InferSchemaType<typeof roomSchema> & { _id: Schema.Types.ObjectId };
+export type RoomDoc = HydratedDocument<IRoom>;
 
-export const Room: Model<RoomDoc> = model<RoomDoc>('Room', roomSchema);
+export const Room: Model<IRoom> = model<IRoom>('Room', roomSchema);

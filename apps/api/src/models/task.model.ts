@@ -1,8 +1,22 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
 
 export const TASK_STATUSES = ['todo', 'in_progress', 'done'] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
+
+export interface ITask {
+  _id: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  assignedTo: mongoose.Types.ObjectId | null;
+  dueDate: Date | null;
+  completedAt: Date | null;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const taskSchema = new Schema(
   {
@@ -26,13 +40,13 @@ const taskSchema = new Schema(
 // list-by-room is the dominant query
 taskSchema.index({ roomId: 1, status: 1, createdAt: -1 });
 taskSchema.index({ assignedTo: 1 });
+// listTasks without status filter, sorted by createdAt
+taskSchema.index({ roomId: 1, createdAt: -1 });
 // report + calendar aggregations group by completion day in a date range
 taskSchema.index({ roomId: 1, completedAt: 1 });
 // recap: tasks completed by a specific user in a date range
 taskSchema.index({ assignedTo: 1, status: 1, completedAt: 1 });
 
-export type TaskDoc = InferSchemaType<typeof taskSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type TaskDoc = HydratedDocument<ITask>;
 
-export const Task: Model<TaskDoc> = model<TaskDoc>('Task', taskSchema);
+export const Task: Model<ITask> = model<ITask>('Task', taskSchema);

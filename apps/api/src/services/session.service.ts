@@ -26,7 +26,6 @@ function toPublicSession(
   user: PopulatedUser,
   linkedTask: TaskRef | null = null,
 ): PublicSession {
-  const ts = session as unknown as { createdAt: Date };
   return {
     id: String(session._id),
     userId: String(session.userId),
@@ -43,7 +42,7 @@ function toPublicSession(
     summary: session.summary ?? null,
     linkedTaskId: session.linkedTaskId ? String(session.linkedTaskId) : null,
     linkedTask,
-    createdAt: ts.createdAt.toISOString(),
+    createdAt: session.createdAt.toISOString(),
   };
 }
 
@@ -110,7 +109,7 @@ export async function startSession(
     }
     const task = await Task.findOne({ _id: input.linkedTaskId, roomId });
     if (!task) throw badRequest('task does not belong to this room');
-    linkedTaskObjectId = task._id as unknown as mongoose.Types.ObjectId;
+    linkedTaskObjectId = task._id as mongoose.Types.ObjectId;
     linkedTaskRef = { id: String(task._id), title: task.title, status: task.status };
   }
 
@@ -184,7 +183,7 @@ export async function stopSession(
   });
 
   const member = await loadUserMember(userId);
-  const linkedTask = await loadTaskRef(active.linkedTaskId as mongoose.Types.ObjectId | null);
+  const linkedTask = await loadTaskRef(active.linkedTaskId);
   const payload = toPublicSession(active, member, linkedTask);
   realtime.emitSessionStopped(String(active.roomId), payload);
   return payload;
@@ -194,7 +193,7 @@ export async function getActiveSession(userId: string): Promise<PublicSession | 
   const active = await Session.findOne({ userId, endTime: null });
   if (!active) return null;
   const member = await loadUserMember(userId);
-  const linkedTask = await loadTaskRef(active.linkedTaskId as mongoose.Types.ObjectId | null);
+  const linkedTask = await loadTaskRef(active.linkedTaskId);
   return toPublicSession(active, member, linkedTask);
 }
 
@@ -310,7 +309,7 @@ export async function suggestActiveSessionSummary(
   const active = await Session.findOne({ userId, endTime: null });
   if (!active) throw badRequest('no active session to summarise');
 
-  const linkedTask = await loadTaskRef(active.linkedTaskId as mongoose.Types.ObjectId | null);
+  const linkedTask = await loadTaskRef(active.linkedTaskId);
   const elapsedMs =
     elapsedMsOverride ?? Math.max(0, Date.now() - active.startTime.getTime());
 

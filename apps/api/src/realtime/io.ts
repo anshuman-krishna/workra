@@ -55,7 +55,9 @@ export function initRealtime(server: HttpServer): IOServer {
 
     // room:join — client asks to subscribe to a room channel.
     // we verify membership fresh every time so revoked access takes effect immediately.
-    socket.on('room:join', async (roomId: unknown, ack?: (res: { ok: boolean; error?: string }) => void) => {
+    socket.on('room:join', async (...args: unknown[]) => {
+      const roomId = args[0] as unknown;
+      const ack = args[1] as ((res: { ok: boolean; error?: string }) => void) | undefined;
       try {
         if (typeof roomId !== 'string' || roomId.length === 0) {
           ack?.({ ok: false, error: 'invalid room id' });
@@ -79,7 +81,9 @@ export function initRealtime(server: HttpServer): IOServer {
       }
     });
 
-    socket.on('room:leave', async (roomId: unknown, ack?: (res: { ok: boolean }) => void) => {
+    socket.on('room:leave', async (...args: unknown[]) => {
+      const roomId = args[0] as unknown;
+      const ack = args[1] as ((res: { ok: boolean }) => void) | undefined;
       if (typeof roomId !== 'string') {
         ack?.({ ok: false });
         return;

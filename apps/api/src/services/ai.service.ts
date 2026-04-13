@@ -1,5 +1,6 @@
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import { increment } from '../utils/metrics.js';
 
 // thin wrapper over the anthropic messages api. the rest of the codebase talks
 // to this module only — callers never import fetch directly. every public
@@ -45,6 +46,7 @@ async function generate(options: GenerateOptions): Promise<GenerateResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), env.AI_TIMEOUT_MS);
 
+  increment('ai_calls_total');
   try {
     const res = await fetch(ANTHROPIC_URL, {
       method: 'POST',
@@ -63,6 +65,7 @@ async function generate(options: GenerateOptions): Promise<GenerateResult> {
     });
 
     if (!res.ok) {
+      increment('ai_failures_total');
       logger.warn({ status: res.status }, 'ai provider returned non-ok status');
       return { text: options.fallback, aiGenerated: false };
     }
@@ -84,6 +87,7 @@ async function generate(options: GenerateOptions): Promise<GenerateResult> {
 
     return { text: cleanup(text), aiGenerated: true };
   } catch (err) {
+    increment('ai_failures_total');
     const aborted = (err as { name?: string }).name === 'AbortError';
     logger.warn({ err, aborted }, 'ai call failed, using fallback');
     return { text: options.fallback, aiGenerated: false };

@@ -4,8 +4,10 @@ import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/db.js';
 import { logger } from './utils/logger.js';
 import { initRealtime, shutdownRealtime } from './realtime/io.js';
+import { initErrorTracking } from './utils/error-tracking.js';
 
 async function bootstrap() {
+  initErrorTracking();
   await connectDatabase();
   const app = createApp();
 

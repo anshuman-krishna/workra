@@ -16,8 +16,8 @@ import type {
 } from '@workra/shared';
 import { toPublicSession } from './session.service.js';
 
-// allowed task state transitions. todo→in_progress→done with reopen via done→in_progress.
-// any other change (todo↔done, in_progress→todo, done→todo) is rejected.
+// allowed task state transitions. todo->in_progress->done with reopen via done->in_progress.
+// any other change (todo<->done, in_progress->todo, done->todo) is rejected.
 const ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   todo: ['in_progress'],
   in_progress: ['done'],
@@ -38,7 +38,6 @@ interface PopulatedUser {
 }
 
 function toPublicTask(task: TaskDoc, assignee: PopulatedUser | null): PublicTask {
-  const ts = task as unknown as { createdAt: Date; updatedAt: Date };
   return {
     id: String(task._id),
     roomId: String(task.roomId),
@@ -56,8 +55,8 @@ function toPublicTask(task: TaskDoc, assignee: PopulatedUser | null): PublicTask
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     completedAt: task.completedAt ? task.completedAt.toISOString() : null,
     createdBy: String(task.createdBy),
-    createdAt: ts.createdAt.toISOString(),
-    updatedAt: ts.updatedAt.toISOString(),
+    createdAt: task.createdAt.toISOString(),
+    updatedAt: task.updatedAt.toISOString(),
   };
 }
 
@@ -109,7 +108,7 @@ export async function createTask(
     metadata: { title: task.title },
   });
 
-  const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
+  const assignee = await loadAssignee(task.assignedTo);
   const payload = toPublicTask(task, assignee);
   realtime.emitTaskChanged(roomId, { type: 'created', task: payload });
   return payload;
@@ -163,7 +162,7 @@ async function loadTaskOrThrow(taskId: string): Promise<TaskDoc> {
 export async function getTask(userId: string, taskId: string): Promise<PublicTask> {
   const task = await loadTaskOrThrow(taskId);
   await assertMember(userId, String(task.roomId));
-  const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
+  const assignee = await loadAssignee(task.assignedTo);
   return toPublicTask(task, assignee);
 }
 
@@ -215,7 +214,7 @@ export async function updateTask(
     metadata: { title: task.title, status: task.status },
   });
 
-  const assignee = await loadAssignee(task.assignedTo as mongoose.Types.ObjectId | null);
+  const assignee = await loadAssignee(task.assignedTo);
   const payload = toPublicTask(task, assignee);
   realtime.emitTaskChanged(roomId, { type: 'updated', task: payload });
   return payload;

@@ -8,7 +8,7 @@ function setRefreshCookie(res: Response, token: string, expiresAt: Date) {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/auth',
     expires: expiresAt,
     domain: env.COOKIE_DOMAIN || undefined,
@@ -19,7 +19,7 @@ function clearRefreshCookie(res: Response) {
   res.clearCookie(REFRESH_COOKIE, {
     httpOnly: true,
     secure: isProd,
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/auth',
     domain: env.COOKIE_DOMAIN || undefined,
   });

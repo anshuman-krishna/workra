@@ -7,6 +7,7 @@ FROM base AS deps
 COPY package.json package-lock.json ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+# install all deps including dev (needed for build step)
 RUN npm ci --workspace=apps/web --workspace=packages/shared --include-workspace-root
 
 # build shared, then next

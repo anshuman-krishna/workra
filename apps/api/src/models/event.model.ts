@@ -1,4 +1,4 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
 
 // calendar events: deliberate, human-scheduled items (a deadline, a meeting, a milestone).
@@ -6,6 +6,18 @@ import { baseSchemaOptions } from '../utils/schema-transform.js';
 // stateful units of intent). events are the "what's on the wall" layer of the calendar.
 export const EVENT_TYPES = ['deadline', 'meeting', 'milestone'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
+
+export interface IEvent {
+  _id: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  title: string;
+  description: string | null;
+  type: EventType;
+  date: Date;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const eventSchema = new Schema(
   {
@@ -24,8 +36,6 @@ const eventSchema = new Schema(
 // primary read path: list a room's upcoming and past events in date order
 eventSchema.index({ roomId: 1, date: 1 });
 
-export type EventDoc = InferSchemaType<typeof eventSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type EventDoc = HydratedDocument<IEvent>;
 
-export const EventModel: Model<EventDoc> = model<EventDoc>('Event', eventSchema);
+export const EventModel: Model<IEvent> = model<IEvent>('Event', eventSchema);

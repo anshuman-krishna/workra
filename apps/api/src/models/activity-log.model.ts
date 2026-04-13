@@ -1,4 +1,4 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseTransform } from '../utils/schema-transform.js';
 import {
   ACTIVITY_TYPES,
@@ -11,6 +11,16 @@ import {
 // whether the source is shared or local. the shared package owns the values.
 export { ACTIVITY_CATEGORY };
 export type { ActivityType, ActivityCategory };
+
+export interface IActivityLog {
+  _id: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  type: string;
+  entityId: mongoose.Types.ObjectId | null;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
 
 const activityLogSchema = new Schema(
   {
@@ -34,11 +44,9 @@ const activityLogSchema = new Schema(
 activityLogSchema.index({ roomId: 1, createdAt: -1 });
 activityLogSchema.index({ roomId: 1, type: 1, createdAt: -1 });
 
-export type ActivityLogDoc = InferSchemaType<typeof activityLogSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type ActivityLogDoc = HydratedDocument<IActivityLog>;
 
-export const ActivityLog: Model<ActivityLogDoc> = model<ActivityLogDoc>(
+export const ActivityLog: Model<IActivityLog> = model<IActivityLog>(
   'ActivityLog',
   activityLogSchema,
 );

@@ -16,7 +16,6 @@ interface PopulatedUser {
 }
 
 function toPublicFile(file: FileDoc, uploader: PublicMember): PublicFile {
-  const ts = file as unknown as { createdAt: Date };
   return {
     id: String(file._id),
     roomId: String(file.roomId),
@@ -27,7 +26,7 @@ function toPublicFile(file: FileDoc, uploader: PublicMember): PublicFile {
     rootFileId: String(file.rootFileId),
     isLatest: file.isLatest,
     uploadedBy: uploader,
-    createdAt: ts.createdAt.toISOString(),
+    createdAt: file.createdAt.toISOString(),
   };
 }
 
@@ -133,7 +132,7 @@ export async function uploadFile(
         isLatest: true,
         uploadedBy: new mongoose.Types.ObjectId(userId),
       });
-      created.rootFileId = created._id as unknown as mongoose.Types.ObjectId;
+      created.rootFileId = created._id as mongoose.Types.ObjectId;
       await created.save();
       saved = created;
     }
@@ -151,7 +150,7 @@ export async function uploadFile(
     metadata: { name: saved.name, version: saved.version, size: saved.size },
   });
 
-  const uploader = await loadUploader(saved.uploadedBy as mongoose.Types.ObjectId);
+  const uploader = await loadUploader(saved.uploadedBy);
   return toPublicFile(saved, uploader);
 }
 
@@ -163,7 +162,7 @@ export async function listFiles(userId: string, roomId: string): Promise<PublicF
   if (files.length === 0) return [];
 
   const uploaderMap = await loadUploaderMap(
-    files.map((f) => f.uploadedBy as mongoose.Types.ObjectId),
+    files.map((f) => f.uploadedBy),
   );
 
   return files.map((f) => {
@@ -188,7 +187,7 @@ export async function getFileWithUrl(userId: string, fileId: string): Promise<Fi
   await assertMember(userId, String(file.roomId));
 
   const signed = await storage.getSignedUrl(file.storageKey, file.name);
-  const uploader = await loadUploader(file.uploadedBy as mongoose.Types.ObjectId);
+  const uploader = await loadUploader(file.uploadedBy);
   return {
     ...toPublicFile(file, uploader),
     downloadUrl: signed.url,
@@ -204,7 +203,7 @@ export async function listFileVersions(userId: string, fileId: string): Promise<
   if (versions.length === 0) return [];
 
   const uploaderMap = await loadUploaderMap(
-    versions.map((v) => v.uploadedBy as mongoose.Types.ObjectId),
+    versions.map((v) => v.uploadedBy),
   );
 
   return versions.map((v) => {

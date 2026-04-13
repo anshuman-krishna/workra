@@ -1,8 +1,8 @@
-import type { SchemaOptions, ToObjectOptions } from 'mongoose';
+import type { SchemaOptions } from 'mongoose';
 
 // strips _id, __v, and any internally-marked fields when serializing.
 // applied via toJSON/toObject so it cannot be forgotten in a controller.
-export const baseTransform: NonNullable<ToObjectOptions['transform']> = (_doc, ret) => {
+export const baseTransform = (_doc: unknown, ret: Record<string, unknown>) => {
   if (ret._id !== undefined) {
     ret.id = String(ret._id);
     delete ret._id;

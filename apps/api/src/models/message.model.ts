@@ -1,5 +1,16 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
+
+export interface IMessage {
+  _id: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  senderId: mongoose.Types.ObjectId;
+  content: string;
+  attachmentFileIds: mongoose.Types.ObjectId[];
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // soft delete: deletedAt preserves context for sibling messages and activity logs.
 // listMessages filters these out; the stored row remains so the log metadata stays honest.
@@ -20,9 +31,9 @@ const messageSchema = new Schema(
 
 // room timeline scan: newest first, paginated by createdAt
 messageSchema.index({ roomId: 1, createdAt: -1 });
+// listMessages filters soft-deleted rows
+messageSchema.index({ roomId: 1, deletedAt: 1, createdAt: -1 });
 
-export type MessageDoc = InferSchemaType<typeof messageSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type MessageDoc = HydratedDocument<IMessage>;
 
-export const Message: Model<MessageDoc> = model<MessageDoc>('Message', messageSchema);
+export const Message: Model<IMessage> = model<IMessage>('Message', messageSchema);

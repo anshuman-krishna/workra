@@ -1,5 +1,20 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
+
+export interface IFile {
+  _id: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  rootFileId: mongoose.Types.ObjectId;
+  name: string;
+  mimeType: string;
+  size: number;
+  storageKey: string;
+  version: number;
+  isLatest: boolean;
+  uploadedBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // versioning model: every uploaded blob is a row.
 // the first version of a file points rootFileId at its own _id and version=1.
@@ -29,8 +44,6 @@ fileSchema.index({ rootFileId: 1, version: -1 });
 // dedupe / lookup-by-name when uploading new versions
 fileSchema.index({ roomId: 1, name: 1, isLatest: 1 });
 
-export type FileDoc = InferSchemaType<typeof fileSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type FileDoc = HydratedDocument<IFile>;
 
-export const FileModel: Model<FileDoc> = model<FileDoc>('File', fileSchema);
+export const FileModel: Model<IFile> = model<IFile>('File', fileSchema);

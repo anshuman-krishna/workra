@@ -1,0 +1,19 @@
+{$DOMAIN:localhost} {
+	# compression
+	encode gzip zstd
+
+	# api: proxy to express
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	# socket.io: proxy with websocket support
+	handle /socket.io/* {
+		reverse_proxy api:4000
+	}
+
+	# everything else: next.js
+	handle {
+		reverse_proxy web:3000
+	}
+}

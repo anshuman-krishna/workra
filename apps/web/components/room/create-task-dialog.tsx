@@ -64,6 +64,7 @@ export function CreateTaskDialog({ open, onOpenChange, roomId }: Props) {
   const onSubmit = handleSubmit(async (values) => {
     const payload: CreateTaskInput = {
       title: values.title.trim(),
+      status: 'todo',
       description: values.description.trim() ? values.description.trim() : undefined,
       assignedTo: values.assignedTo || null,
       dueDate: values.dueDate || null,

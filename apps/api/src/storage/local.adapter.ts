@@ -51,7 +51,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     const sig = signLocalKey(key, expires);
     const params = new URLSearchParams({ exp: String(expires), sig, name: filename });
     return {
-      url: `${this.publicBaseUrl}/api/files/local/${encodeURIComponent(key)}?${params.toString()}`,
+      url: `${this.publicBaseUrl}/api/v1/files/local/${encodeURIComponent(key)}?${params.toString()}`,
       expiresAt: new Date(expires * 1000),
     };
   }

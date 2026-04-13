@@ -3,6 +3,10 @@ services:
     image: mongo:7
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: workra
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-workra_dev}
+      MONGO_INITDB_DATABASE: workra
     volumes:
       - mongo-data:/data/db
 
@@ -15,7 +19,7 @@ services:
     env_file:
       - apps/api/.env
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/workra
+      - MONGODB_URI=mongodb://workra:${MONGO_PASSWORD:-workra_dev}@mongo:27017/workra?authSource=admin
     depends_on:
       - mongo
 
@@ -26,9 +30,28 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
     depends_on:
       - api
 
+  # reverse proxy (optional, for production with https)
+  # uncomment to enable:
+  # caddy:
+  #   image: caddy:2-alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile
+  #     - caddy-data:/data
+  #     - caddy-config:/config
+  #   environment:
+  #     - DOMAIN=${DOMAIN:-localhost}
+  #   depends_on:
+  #     - api
+  #     - web
+
 volumes:
   mongo-data:
+  # caddy-data:
+  # caddy-config:

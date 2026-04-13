@@ -2,13 +2,7 @@ import type { UserDoc } from '../models/user.model.js';
 import type { RoomDoc } from '../models/room.model.js';
 import type { RoomRole, PublicUser, PublicRoom, PublicMember } from '@workra/shared';
 
-interface Timestamped {
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export function toPublicUser(user: UserDoc): PublicUser {
-  const ts = user as unknown as Timestamped;
   return {
     id: String(user._id),
     name: user.name,
@@ -16,7 +10,7 @@ export function toPublicUser(user: UserDoc): PublicUser {
     avatarSeed: user.avatarSeed,
     email: user.email,
     role: user.role as PublicUser['role'],
-    createdAt: ts.createdAt.toISOString(),
+    createdAt: user.createdAt.toISOString(),
   };
 }
 
@@ -33,13 +27,12 @@ export function toPublicRoom(
   role: RoomRole,
   memberCount: number,
 ): PublicRoom {
-  const ts = room as unknown as Timestamped;
   return {
     id: String(room._id),
     name: room.name,
     ownerId: String(room.ownerId),
     inviteCode: room.inviteCode,
-    createdAt: ts.createdAt.toISOString(),
+    createdAt: room.createdAt.toISOString(),
     role,
     memberCount,
   };

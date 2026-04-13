@@ -1,5 +1,19 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
+
+export interface ISession {
+  _id: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  startTime: Date;
+  endTime: Date | null;
+  duration: number | null;
+  intent: string;
+  summary: string | null;
+  linkedTaskId: mongoose.Types.ObjectId | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const sessionSchema = new Schema(
   {
@@ -21,14 +35,14 @@ sessionSchema.index({ userId: 1, endTime: 1 });
 sessionSchema.index({ roomId: 1, startTime: -1 });
 // cross-room recap: user's sessions in a date range
 sessionSchema.index({ userId: 1, startTime: 1 });
+// listSessionsForTask + deleteTask cleanup
+sessionSchema.index({ linkedTaskId: 1 });
 // hard guarantee: at most one active session per user (race-safe)
 sessionSchema.index(
   { userId: 1 },
   { unique: true, partialFilterExpression: { endTime: null } },
 );
 
-export type SessionDoc = InferSchemaType<typeof sessionSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type SessionDoc = HydratedDocument<ISession>;
 
-export const Session: Model<SessionDoc> = model<SessionDoc>('Session', sessionSchema);
+export const Session: Model<ISession> = model<ISession>('Session', sessionSchema);

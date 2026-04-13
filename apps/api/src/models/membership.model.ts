@@ -1,5 +1,15 @@
-import { Schema, model, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 import { baseSchemaOptions } from '../utils/schema-transform.js';
+
+export interface IMembership {
+  _id: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  roomId: mongoose.Types.ObjectId;
+  role: 'owner' | 'collaborator' | 'client';
+  joinedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const membershipSchema = new Schema(
   {
@@ -18,11 +28,9 @@ const membershipSchema = new Schema(
 
 membershipSchema.index({ userId: 1, roomId: 1 }, { unique: true });
 
-export type MembershipDoc = InferSchemaType<typeof membershipSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type MembershipDoc = HydratedDocument<IMembership>;
 
-export const Membership: Model<MembershipDoc> = model<MembershipDoc>(
+export const Membership: Model<IMembership> = model<IMembership>(
   'Membership',
   membershipSchema,
 );

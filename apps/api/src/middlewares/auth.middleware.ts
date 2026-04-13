@@ -53,11 +53,11 @@ export const requireRoomRole =
 
       const membership = await Membership.findOne({ userId: req.userId, roomId });
       if (!membership) return next(forbidden('not a member of this room'));
-      if (!roles.includes(membership.role as RoomRole)) {
+      if (!roles.includes(membership.role as unknown as RoomRole)) {
         return next(forbidden(`requires room role: ${roles.join(' or ')}`));
       }
 
-      req.roomRole = membership.role as RoomRole;
+      req.roomRole = membership.role as unknown as RoomRole;
       next();
     } catch (err) {
       next(err);

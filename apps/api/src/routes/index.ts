@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
+import { getMetrics } from '../utils/metrics.js';
 import authRoutes from './auth.routes.js';
 import roomRoutes from './room.routes.js';
 import userRoutes from './user.routes.js';
@@ -21,6 +22,7 @@ router.get('/health', (_req, res) => {
     status: dbState === 1 ? 'ok' : 'degraded',
     db: dbStatus,
     uptime: Math.floor((Date.now() - bootTime) / 1000),
+    metrics: getMetrics(),
   });
 });
 
