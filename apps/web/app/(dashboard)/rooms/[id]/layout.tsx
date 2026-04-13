@@ -19,7 +19,13 @@ export default function RoomLayout({ children }: { children: React.ReactNode }) 
   });
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">loading room…</p>;
+    return (
+      <div className="space-y-6">
+        <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-64 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-full animate-pulse rounded bg-muted" />
+      </div>
+    );
   }
 
   if (error || !data) {

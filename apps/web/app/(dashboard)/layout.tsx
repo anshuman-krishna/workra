@@ -19,7 +19,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   if (!hydrated || !user) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-muted-foreground">loading…</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-6 w-20 animate-pulse rounded bg-muted" />
+          <div className="h-3 w-32 animate-pulse rounded bg-muted" />
+        </div>
       </main>
     );
   }

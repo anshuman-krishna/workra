@@ -19,6 +19,8 @@ const sessionSchema = new Schema(
 sessionSchema.index({ userId: 1, endTime: 1 });
 // room timeline scans
 sessionSchema.index({ roomId: 1, startTime: -1 });
+// cross-room recap: user's sessions in a date range
+sessionSchema.index({ userId: 1, startTime: 1 });
 // hard guarantee: at most one active session per user (race-safe)
 sessionSchema.index(
   { userId: 1 },

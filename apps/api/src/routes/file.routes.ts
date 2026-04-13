@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import * as fileController from '../controllers/file.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
+import { writeLimiter } from '../middlewares/rate-limit.middleware.js';
 import { env } from '../config/env.js';
 
 // in-memory uploads keep the controller stateless. service handles persistence to storage.
@@ -19,7 +20,7 @@ router.get('/local/:key', fileController.serveLocal);
 router.use(requireAuth);
 router.get('/:id', fileController.get);
 router.get('/:id/versions', fileController.versions);
-router.delete('/:id', fileController.remove);
+router.delete('/:id', writeLimiter, fileController.remove);
 
 export default router;
 export const uploadMiddleware = upload.single('file');

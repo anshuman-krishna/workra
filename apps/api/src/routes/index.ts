@@ -7,6 +7,7 @@ import taskRoutes from './task.routes.js';
 import fileRoutes from './file.routes.js';
 import messageRoutes from './message.routes.js';
 import eventRoutes from './event.routes.js';
+import adminRoutes from './admin.routes.js';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/tasks', taskRoutes);
 router.use('/files', fileRoutes);
 router.use('/messages', messageRoutes);
 router.use('/events', eventRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;

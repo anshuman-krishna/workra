@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Calendar, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, FileText, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/auth/store';
 
 const items = [
   { href: '/dashboard', label: 'dashboard', icon: LayoutDashboard },
@@ -14,6 +15,8 @@ const items = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === 'admin';
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r bg-card md:flex md:flex-col">
@@ -43,8 +46,22 @@ export function Sidebar() {
             </Link>
           );
         })}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={cn(
+              'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+              pathname.startsWith('/admin')
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
+            )}
+          >
+            <Shield className="h-4 w-4" />
+            <span>admin</span>
+          </Link>
+        )}
       </nav>
-      <div className="border-t p-4 text-xs text-muted-foreground">v0.0.0 · phase 1</div>
+      <div className="border-t p-4 text-xs text-muted-foreground">v0.1.0</div>
     </aside>
   );
 }

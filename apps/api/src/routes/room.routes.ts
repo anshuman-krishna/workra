@@ -24,6 +24,7 @@ import * as calendarController from '../controllers/calendar.controller.js';
 import * as reportController from '../controllers/report.controller.js';
 import { requireAuth, requireRoomRole } from '../middlewares/auth.middleware.js';
 import { validateBody, validateQuery } from '../middlewares/validate.middleware.js';
+import { writeLimiter, aiLimiter, uploadLimiter } from '../middlewares/rate-limit.middleware.js';
 import { uploadMiddleware } from './file.routes.js';
 
 const router = Router();
@@ -31,8 +32,8 @@ const router = Router();
 router.use(requireAuth);
 
 router.get('/', roomController.listRooms);
-router.post('/', validateBody(createRoomSchema), roomController.createRoom);
-router.post('/join', validateBody(joinRoomSchema), roomController.joinRoom);
+router.post('/', writeLimiter, validateBody(createRoomSchema), roomController.createRoom);
+router.post('/join', writeLimiter, validateBody(joinRoomSchema), roomController.joinRoom);
 
 router.get('/:id', roomController.getRoom);
 router.get('/:id/invite', requireRoomRole(['owner']), roomController.getRoomInvite);
@@ -64,6 +65,7 @@ router.get(
 
 router.post(
   '/:id/tasks',
+  writeLimiter,
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(createTaskSchema),
   taskController.create,
@@ -77,6 +79,7 @@ router.get(
 
 router.post(
   '/:id/files',
+  uploadLimiter,
   requireRoomRole(['owner', 'collaborator', 'client']),
   uploadMiddleware,
   fileController.upload,
@@ -98,6 +101,7 @@ router.get(
 
 router.post(
   '/:id/messages',
+  writeLimiter,
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(createMessageSchema),
   messageController.send,
@@ -112,6 +116,7 @@ router.get(
 
 router.post(
   '/:id/events',
+  writeLimiter,
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(createEventSchema),
   eventController.create,
@@ -132,6 +137,7 @@ router.get(
 
 router.post(
   '/:id/report/ai-summary',
+  aiLimiter,
   requireRoomRole(['owner', 'collaborator', 'client']),
   validateBody(aiSummaryRequestSchema),
   reportController.getRoomReportAiSummary,
