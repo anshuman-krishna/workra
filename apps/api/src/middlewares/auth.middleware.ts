@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import mongoose from 'mongoose';
 import { verifyAccessToken } from '../utils/jwt.js';
-import { forbidden, unauthorized } from '../utils/errors.js';
+import { forbidden, notFound, unauthorized } from '../utils/errors.js';
 import { Membership } from '../models/membership.model.js';
 import type { RoomRole } from '@workra/shared';
 
@@ -50,6 +51,8 @@ export const requireRoomRole =
       if (!req.userId) return next(unauthorized());
       const roomId = req.params[paramName];
       if (!roomId) return next(forbidden('room id missing'));
+      // reject malformed ids before they reach mongoose (CastError → 500).
+      if (!mongoose.isValidObjectId(roomId)) return next(notFound('room not found'));
 
       const membership = await Membership.findOne({ userId: req.userId, roomId });
       if (!membership) return next(forbidden('not a member of this room'));
